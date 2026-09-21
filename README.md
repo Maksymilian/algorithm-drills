@@ -8,3 +8,6 @@
 - [Crossword Puzzle — backtracking, and what the pruning is worth](docs/recursion/crossword-puzzle.md)
 - [`Gatherers.mapConcurrent`, and a semaphore that shares equally](docs/jdk/map-concurrent-and-equal-share-semaphore.md)
 - [Left Rotation — one index map, and why the fewest writes lose](docs/array/left-rotation.md)
+- [Next-index cycle — the rho, and why constant space is also the fast one](docs/array/next-index-cycle.md)
+- [Points in a circle — counting a billion of them without reading them](docs/spatial/points-in-a-circle.md)
+- [Fibonacci — the recurrence, and the price of writing it down literally](docs/recursion/fibonacci.md)
