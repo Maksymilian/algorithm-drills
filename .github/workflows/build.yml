@@ -1,0 +1,42 @@
+# Compiles everything (the JMH harness included, through its annotation processor), runs every
+# test, and packages the jar. The JMH benchmarks themselves are not run: they take minutes, and
+# their numbers mean nothing on a shared runner. See scripts/perf/ for running them locally.
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# a newer push to the same branch or pull request makes the older run pointless
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'          # maven.compiler.release in pom.xml
+          cache: maven
+
+      - name: Build and test
+        run: mvn --batch-mode --no-transfer-progress verify
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
