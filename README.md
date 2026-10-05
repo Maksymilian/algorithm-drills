@@ -7,7 +7,13 @@
 - [Candies — two directions, folded into one pass](docs/dynamic/candies.md)
 - [Crossword Puzzle — backtracking, and what the pruning is worth](docs/recursion/crossword-puzzle.md)
 - [`Gatherers.mapConcurrent`, and a semaphore that shares equally](docs/jdk/map-concurrent-and-equal-share-semaphore.md)
+- [Three locks — `ReentrantLock`, `StampedLock`, and one built out of a `VarHandle`](docs/jdk/locks-reentrant-stamped-and-varhandle.md)
+- [Primitive `int` lists — fastutil, Eclipse Collections, and a plain `int[]`, measured](docs/jdk/primitive-int-lists.md)
 - [Left Rotation — one index map, and why the fewest writes lose](docs/array/left-rotation.md)
 - [Next-index cycle — the rho, and why constant space is also the fast one](docs/array/next-index-cycle.md)
 - [Points in a circle — counting a billion of them without reading them](docs/spatial/points-in-a-circle.md)
 - [Fibonacci — the recurrence, and the price of writing it down literally](docs/recursion/fibonacci.md)
+
+## Tools
+
+- [Watching the tests and benchmarks with `taskset`, `perf`, `jstack` and `jcmd`](scripts/perf/README.md)
