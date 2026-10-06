@@ -124,3 +124,102 @@ Typowa ocena „na oko”: około 10⁸ prostych operacji na sekundę.
 | ≤ 10⁶ | O(n log n) | sortowanie, kopiec, `TreeMap` |
 | ≤ 10⁸ | O(n) | jedno przejście |
 | więcej | O(log n), O(1) na zapytanie | indeks przygotowany wcześniej |
+
+## Diagnoza działającej JVM: zakleszczenia i czas metod
+
+Wszystko poniżej sprawdzone na JDK 25.0.1. `<pid>` podaje samo `jcmd` bez argumentów.
+
+### Zakleszczenia
+
+| Narzędzie | Jak | Co widzi |
+|---|---|---|
+| `jstack -l <pid>` albo `jcmd <pid> Thread.print -l` | jednorazowy zrzut wątków | na końcu `Found one Java-level deadlock:`: kto trzyma co i na co czeka |
+| `kill -3 <pid>` | ten sam zrzut na standardowe wyjście programu | jak wyżej |
+| `ThreadMXBean.findDeadlockedThreads()` | w kodzie, np. wątek-strażnik sprawdzający co kilka sekund | identyfikatory zakleszczonych wątków; `getThreadInfo(ids)` mówi, kto trzyma blokadę |
+| JConsole, VisualVM | przycisk „Detect Deadlock” | to samo co `ThreadMXBean` |
+| JFR | `jcmd <pid> JFR.start thread-dump=10s` | okresowe zrzuty wątków z tą samą sekcją `Found one Java-level deadlock` |
+
+**Wykrywane są tylko cykle blokad z właścicielem:** `synchronized`, `ReentrantLock` i strona zapisu
+`ReentrantReadWriteLock`. **Niewykrywane:** `Semaphore` i `StampedLock` (nie mają właściciela),
+`CountDownLatch`, zgubiony sygnał w `Condition.await()` albo `wait()`/`notify()`. Wtedy zostaje kilka
+zrzutów w odstępie kilku sekund: te same wątki zaparkowane na tym samym obiekcie (`WAITING (parking)`,
+`parking to wait for <...> (a java.util.concurrent.Semaphore$NonfairSync)`) znaczą, że nic się nie
+rusza. Wątków wirtualnych `jstack` nie pokazuje: `jcmd <pid> Thread.dump_to_file -format=json plik.json`.
+
+**Pułapka JFR:** zdarzenia blokowania (`jdk.JavaMonitorEnter`, `jdk.ThreadPark`) zapisują się dopiero
+po _zakończeniu_ czekania, a zakleszczenie się nie kończy, więc zakleszczone wątki nie mają ani
+jednego takiego zdarzenia. Te zdarzenia służą do badania rywalizacji o blokady, a zakleszczenie
+pokazują tylko okresowe zrzuty wątków (`thread-dump=10s`).
+
+W testach zawieszenie zamieniaj w błąd limitem czasu (`@Timeout`, `assertTimeoutPreemptively`).
+
+### Czas i ślad wywołań metody na działającej aplikacji (JFR, JDK 25)
+
+JDK 25 (JEP 520) mierzy wybrane metody bez zmiany kodu i bez restartu: JFR dokłada do nich
+instrumentację kodu bajtowego. `method-timing` zbiera liczbę wywołań i czasy min/średni/max,
+`method-trace` zapisuje każde wywołanie z czasem trwania i stosem wywołań.
+
+```sh
+jcmd                                                              # znajdź pid
+jcmd <pid> JFR.start name=work method-timing=App::work method-trace=App::work
+# ... poczekaj, aż aplikacja wykona metodę wiele razy ...
+jcmd <pid> JFR.dump name=work filename=/tmp/work.jfr
+jcmd <pid> JFR.stop name=work                                     # zdejmuje instrumentację
+
+jfr view method-timing /tmp/work.jfr                              # tabela czasów
+jfr view method-calls /tmp/work.jfr                               # kto woła metodę i ile razy
+jfr print --events jdk.MethodTrace /tmp/work.jfr                  # każde wywołanie: czas + stos
+```
+
+Wynik `jfr view method-timing` dla przykładowej aplikacji, która co 50 ms sortuje losową listę:
+
+```
+Timed Method                         Invocations Minimum Time Average Time Maximum Time
+------------------------------------ ----------- ------------ ------------ ------------
+App.work(int)                                145  0.098300 ms  5.470000 ms 15.200000 ms
+java.util.ArrayList.sort(Comparator)         146  0.081400 ms  4.970000 ms 14.100000 ms
+```
+
+i jedno zdarzenie `jdk.MethodTrace`:
+
+```
+jdk.MethodTrace {
+  startTime = 20:40:51.510 (2026-10-06)
+  duration = 6.01 ms
+  method = App.work(int)
+  eventThread = "main" (javaThreadId = 3)
+  stackTrace = [
+    App.main(String[]) line: 19
+    ...
+  ]
+}
+```
+
+**Filtr metod:**
+
+| Filtr | Co mierzy |
+|---|---|
+| `App::work` | jedną metodę (wszystkie przeciążenia) |
+| `App` | wszystkie metody klasy |
+| `java.util.ArrayList::sort` | metodę z JDK |
+| `App::work;java.util.ArrayList::sort` | kilka filtrów, rozdzielonych `;` |
+
+**To samo od startu aplikacji**, zamiast przez `jcmd`:
+
+```sh
+java "-XX:StartFlightRecording:method-timing=App::work;java.util.ArrayList::sort,filename=start.jfr,dumponexit=true" App.java
+jfr view method-timing start.jfr
+```
+
+**Na co uważać:**
+
+- Liczą się tylko wywołania, które _zakończyły się_ po włączeniu pomiaru. Metoda, która trwa cały
+  czas (np. `main`), ma 0 wywołań.
+- `method-trace` zapisuje każde wywołanie. Na gorącej metodzie wołanej miliony razy to dużo danych i
+  realny narzut, więc najpierw `method-timing`, a ślad tylko dla podejrzanej metody i na krótko.
+- Próg `jdk.MethodTrace#threshold=10ms` na JDK 25.0.1 nie odfiltrował w moich testach krótszych
+  wywołań, ani z `method-trace=`, ani z `jdk.MethodTrace#filter=`. Krótkie wywołania odsiewaj przy
+  czytaniu wyników.
+- Na starszym JDK tego nie ma. Zostaje próbkowanie (`jcmd <pid> JFR.start settings=profile`, potem
+  `jfr view hot-methods plik.jfr`), które pokazuje, gdzie idzie czas procesora, ale nie liczy
+  wywołań, albo zewnętrzny agent (async-profiler, Arthas `trace`/`watch`).

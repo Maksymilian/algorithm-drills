@@ -259,6 +259,16 @@ wątek wykonuje prywatną sekcję krytyczną, a siedem czeka. Kolejność usuwa 
 razy, bo każde przekazanie staje się parkowaniem i budzeniem, zamiast zostać w pamięci podręcznej
 zwalniającego wątku.
 
+**0.00% to wynik na spokojnej maszynie, a nie gwarancja.** Pod pełnym obciążeniem procesorów (cały
+zestaw testów naraz albo 24 zajęte rdzenie) sprawiedliwy semafor oddawał zezwolenie samemu sobie w
+23–24% zajęć i test z progiem 10% padał. To nie złamana sprawiedliwość: system wywłaszcza pozostałe
+wątki, gdy są między `release()` a kolejnym `acquire()`, więc kolejka jest pusta, a zwolnione zezwolenie
+legalnie wraca do jedynego chętnego. Gwarancja jest węższa: **zezwolenie zwolnione, gdy ktoś czeka w
+kolejce, nie wraca do zwalniającego wątku przed tym czekającym.** Test liczy więc tylko takie
+przypadki (`hasQueuedThreads()` sprawdzane tuż przed `release()`) i wymaga dokładnie zera: dla
+sprawiedliwego semafora to 0 w 10 na 10 przebiegów pod pełnym obciążeniem, a dla niesprawiedliwego
+podstawionego w tym samym teście 3 354 682 z 3 422 311.
+
 **Jak tego nie mierzyć.** Dwie oczywiste miary niczego tu nie mierzą, a pierwsza wersja tego przykładu
 używała obu:
 

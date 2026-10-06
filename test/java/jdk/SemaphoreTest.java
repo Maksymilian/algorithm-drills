@@ -5,11 +5,13 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -170,51 +172,100 @@ class SemaphoreTest {
                 "the same semaphore should be usable for a second round");
     }
 
-    private record Barging(long acquisitions, long selfSuccessions) {
-        double selfRate() { return acquisitions == 0 ? 0 : (double) selfSuccessions / acquisitions; }
+    private record Barging(long acquisitions, long selfSuccessions, long contendedReleases, long bargesPastWaiters) {
+        double selfRate() {
+            return acquisitions == 0 ? 0 : (double) selfSuccessions / acquisitions;
+        }
+    }
+
+    private static final class Tally {
+        long acquisitions, selfSuccessions, contendedReleases, bargesPastWaiters;
+        boolean othersWaitedAtLastRelease;
+
+        void acquired(boolean self) {
+            acquisitions++;
+            selfSuccessions += self ? 1 : 0;
+            bargesPastWaiters += self && othersWaitedAtLastRelease ? 1 : 0;
+        }
+
+        void releasing(boolean othersWaiting) {
+            othersWaitedAtLastRelease = othersWaiting;
+            contendedReleases += othersWaiting ? 1 : 0;
+        }
+    }
+
+    private static final class Window {
+        final CountDownLatch ready;
+        final CountDownLatch go = new CountDownLatch(1);
+        volatile long deadline;
+
+        Window(int threads) {
+            ready = new CountDownLatch(threads);
+        }
+
+        void await() throws InterruptedException {
+            ready.countDown();
+            go.await();
+        }
+
+        void open(int millis) throws InterruptedException {
+            ready.await();
+            deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis);
+            go.countDown();
+        }
     }
 
     private static Barging barging(int threads, int millis, boolean fair) throws InterruptedException {
-        Semaphore gate = new Semaphore(1, fair);
-        AtomicInteger lastHolder = new AtomicInteger(-1);
-        AtomicInteger acquisitions = new AtomicInteger();
-        AtomicInteger selfSuccessions = new AtomicInteger();
-        CountDownLatch ready = new CountDownLatch(threads);
-        CountDownLatch go = new CountDownLatch(1);
-        long[] deadline = new long[1];
+        Window window = new Window(threads);
+        Tally[] tallies = Stream.generate(Tally::new).limit(threads).toArray(Tally[]::new);
+        Thread[] workers = startAll(new Semaphore(1, fair), tallies, window);
+        window.open(millis);
+        for (Thread w : workers) {
+            w.join(TimeUnit.SECONDS.toMillis(30));
+        }
+        return sum(tallies);
+    }
 
-        Thread[] workers = new Thread[threads];
-        for (int t = 0; t < threads; t++) {
+    private static Thread[] startAll(Semaphore gate, Tally[] tallies, Window window) {
+        AtomicInteger lastHolder = new AtomicInteger(-1);
+        Thread[] workers = new Thread[tallies.length];
+        for (int t = 0; t < tallies.length; t++) {
             final int id = t;
-            workers[t] = new Thread(() -> {
-                int mine = 0, selfs = 0;
-                ready.countDown();
-                try {
-                    go.await();
-                    while (System.nanoTime() < deadline[0]) {
-                        for (int i = 0; i < 64; i++) {
-                            gate.acquire();
-                            if (lastHolder.getAndSet(id) == id) selfs++;
-                            mine++;
-                            Thread.onSpinWait();
-                            gate.release();
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                acquisitions.addAndGet(mine);
-                selfSuccessions.addAndGet(selfs);
-            });
+            workers[t] = new Thread(() -> work(gate, lastHolder, id, tallies[id], window));
             workers[t].setDaemon(true);
             workers[t].start();
         }
-        ready.await();
-        deadline[0] = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis);
-        go.countDown();
-        for (Thread w : workers) w.join(TimeUnit.SECONDS.toMillis(30));
-        return new Barging(acquisitions.get(), selfSuccessions.get());
+        return workers;
+    }
+
+    private static void work(Semaphore gate, AtomicInteger lastHolder, int id, Tally tally, Window window) {
+        try {
+            window.await();
+            while (System.nanoTime() < window.deadline) {
+                for (int i = 0; i < 64; i++) {
+                    hold(gate, lastHolder, id, tally);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void hold(Semaphore gate, AtomicInteger lastHolder, int id, Tally tally)
+            throws InterruptedException {
+        gate.acquire();
+        tally.acquired(lastHolder.getAndSet(id) == id);
+        Thread.onSpinWait();
+        tally.releasing(gate.hasQueuedThreads());
+        gate.release();
+    }
+
+    private static Barging sum(Tally[] tallies) {
+        return new Barging(
+                Arrays.stream(tallies).mapToLong(t -> t.acquisitions).sum(),
+                Arrays.stream(tallies).mapToLong(t -> t.selfSuccessions).sum(),
+                Arrays.stream(tallies).mapToLong(t -> t.contendedReleases).sum(),
+                Arrays.stream(tallies).mapToLong(t -> t.bargesPastWaiters).sum());
     }
 
     @Test
@@ -230,9 +281,9 @@ class SemaphoreTest {
     @Timeout(60)
     void aFairSemaphoreHandsItOnInstead() throws InterruptedException {
         Barging fair = barging(8, 300, true);
-        assertTrue(fair.acquisitions() > 100, "too few acquisitions to mean anything");
-        assertTrue(fair.selfRate() < 0.1,
-                Math.round(100 * fair.selfRate()) + "% self-succession on a fair semaphore");
+        assertTrue(fair.contendedReleases() > 100, "too few releases with someone waiting to mean anything");
+        assertEquals(0, fair.bargesPastWaiters(), fair.bargesPastWaiters() + " of " + fair.contendedReleases()
+                + " permits released while others waited went back to the releasing thread");
     }
 
     private static int permitsAfterBareReleases(int bareReleases) {

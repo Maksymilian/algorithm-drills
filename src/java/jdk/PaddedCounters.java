@@ -5,6 +5,7 @@ import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.atomic.LongAdder;
 
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
@@ -62,6 +63,7 @@ public final class PaddedCounters {
     private final long mask;
 
     public PaddedCounters(Arena arena, int stripes) {
+        ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         if (stripes <= 0 || Integer.bitCount(stripes) != 1) {
             throw new IllegalArgumentException("stripes must be a positive power of two: " + stripes);
         }

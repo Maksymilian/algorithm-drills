@@ -20,8 +20,8 @@ JAVA="$JAVA_HOME/bin/java"
 P_CORES="$(cat /sys/devices/cpu_core/cpus 2>/dev/null || cat /sys/devices/system/cpu/online)"
 E_CORES="$(cat /sys/devices/cpu_atom/cpus 2>/dev/null || true)"
 
-# Same console launcher line as the pom's junit-jupiter 5.10.2.
-CONSOLE_VERSION=1.10.2
+# Ta sama wersja launchera konsolowego co junit-jupiter w pom (w JUnit 6 Platform i Jupiter mają wspólny numer).
+CONSOLE_VERSION=6.1.3
 CONSOLE_JAR="$HOME/.m2/repository/org/junit/platform/junit-platform-console-standalone/$CONSOLE_VERSION/junit-platform-console-standalone-$CONSOLE_VERSION.jar"
 
 # Same heap as surefire's argLine: some tests are only meaningful on a heap this small.
