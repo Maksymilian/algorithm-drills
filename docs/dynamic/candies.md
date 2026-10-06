@@ -1,111 +1,112 @@
-# Candies — two directions, folded into one pass
+# Candies: dwa kierunki złożone w jedno przejście
 
-Notes for [`src/java/dynamic/Candies.java`](../../src/java/dynamic/Candies.java),
-tested by [`test/java/dynamic/CandiesTest.java`](../../test/java/dynamic/CandiesTest.java).
+Notatka do [`src/java/dynamic/Candies.java`](../../src/java/dynamic/Candies.java),
+testy: [`test/java/dynamic/CandiesTest.java`](../../test/java/dynamic/CandiesTest.java).
 
-**Problem** Children stand in a line with ratings `arr[n]`. Every child gets at least one candy, and
-a child rated **higher than an immediate neighbour** must get strictly more candies than that
-neighbour. Minimise the total. Constraints `1 ≤ n ≤ 10⁵`, `1 ≤ arr[i] ≤ 10⁵`; the answer is returned
-as a `long`, and [the reason](#the-answer-does-not-fit-in-an-int) is not decoration.
+**Zadanie.** Dzieci stoją w rzędzie z ocenami `arr[n]`. Każde dostaje co najmniej jeden cukierek, a
+dziecko ocenione **wyżej niż bezpośredni sąsiad** musi dostać ściśle więcej niż ten sąsiad.
+Zminimalizuj sumę. Ograniczenia: `1 ≤ n ≤ 10⁵`, `1 ≤ arr[i] ≤ 10⁵`; odpowiedź jest zwracana jako
+`long`, a powód (sekcja „Odpowiedź nie mieści się w `int`” niżej) to nie ozdoba.
 
-Only the higher child is constrained. Equal ratings constrain nobody, and a lower rating imposes
-nothing on its neighbour — which is why `[1, 2, 2]` costs `1 + 2 + 1 = 4` and not 6.
+Ograniczone jest tylko dziecko ocenione wyżej. Równe oceny nikogo nie ograniczają, a niższa ocena
+niczego nie narzuca sąsiadowi; dlatego `[1, 2, 2]` kosztuje `1 + 2 + 1 = 4`, a nie 6.
 
-## The recurrence
+## Rekurencja
 
-Every rule is a *lower bound* on one child's count, and the bounds split by direction:
+Każda zasada to _dolna granica_ dla jednego dziecka, a granice dzielą się według kierunku:
 
 ```
-L[i] = ratings[i] > ratings[i-1] ? L[i-1] + 1 : 1        L[0] = 1     left-to-right
-R[i] = ratings[i] > ratings[i+1] ? R[i+1] + 1 : 1        R[n-1] = 1   right-to-left
+L[i] = ratings[i] > ratings[i-1] ? L[i-1] + 1 : 1        L[0] = 1     od lewej do prawej
+R[i] = ratings[i] > ratings[i+1] ? R[i+1] + 1 : 1        R[n-1] = 1   od prawej do lewej
 
-candy[i] = max(L[i], R[i])                               answer = Σ candy[i]
+candy[i] = max(L[i], R[i])                               odpowiedź = Σ candy[i]
 ```
 
-| Part | Meaning |
+| Część | Znaczenie |
 |---|---|
-| **State** | `L[i]` — the answer for `ratings[0..i]` if the right neighbour did not exist; `R[i]` the mirror for the suffix |
-| **Transition** | a child rated above its predecessor must outbid it, so it takes that child's answer plus one; otherwise the chain breaks and it drops back to the floor |
-| **Base case** | `1` — the floor every child is owed, and the reason a broken chain restarts rather than continues |
-| **Answer** | `Σ max(L[i], R[i])` |
+| **Stan** | `L[i]`: odpowiedź dla `ratings[0..i]`, gdyby prawego sąsiada nie było; `R[i]` lustrzanie dla sufiksu |
+| **Przejście** | dziecko ocenione wyżej niż poprzednik musi go przebić, więc bierze jego odpowiedź plus jeden; inaczej łańcuch się urywa i dziecko wraca do minimum |
+| **Przypadek bazowy** | `1`: minimum należne każdemu dziecku i powód, dla którego urwany łańcuch zaczyna od nowa, a nie ciągnie się dalej |
+| **Odpowiedź** | `Σ max(L[i], R[i])` |
 
-Sample 1, `[2, 4, 2, 6, 1, 7, 8, 9, 2, 1]` → 19:
+Przykład 1, `[2, 4, 2, 6, 1, 7, 8, 9, 2, 1]` → 19:
 
 ```
  i        0  1  2  3  4  5  6  7  8  9
- rating   2  4  2  6  1  7  8  9  2  1
- L        1  2  1  2  1  2  3  4  1  1     <- climbs on a rise, resets otherwise
- R        1  2  1  2  1  1  1  3  2  1     <- the same rule walked backwards
+ ocena    2  4  2  6  1  7  8  9  2  1
+ L        1  2  1  2  1  2  3  4  1  1     <- rośnie przy wzroście, inaczej wraca do 1
+ R        1  2  1  2  1  1  1  3  2  1     <- ta sama zasada od tyłu
  candy    1  2  1  2  1  2  3  4  2  1     = 19
                                  ^  ^
-                     L carries the climb 1,7,8,9 at indices 4..7; only R knows
-                     that index 8 heads a descent and cannot be left at 1.
+                     L niesie wzrost 1,7,8,9 na indeksach 4..7; tylko R wie,
+                     że indeks 8 zaczyna spadek i nie może zostać z 1.
 ```
 
-Both directions are needed, and each is blind on its own: `L` alone underfeeds every descent, `R`
-alone every ascent.
+Potrzebne są oba kierunki, a każdy sam jest ślepy: samo `L` niedokarmia każdego spadku, samo `R`
+każdego wzrostu.
 
-## Why the maximum is right
+## Dlaczego maksimum jest poprawne
 
-This is the step that has to be argued — the rest is bookkeeping.
+To krok, który trzeba uzasadnić; reszta to księgowość.
 
-**It is legal.** Take a rise, `ratings[i] > ratings[i-1]`. Then `L[i] = L[i-1] + 1`, and
-`R[i-1] = 1` because `ratings[i-1] > ratings[i]` is false, so:
+**Jest dozwolone.** Weź wzrost, `ratings[i] > ratings[i-1]`. Wtedy `L[i] = L[i-1] + 1`, a
+`R[i-1] = 1`, bo `ratings[i-1] > ratings[i]` jest fałszem, więc:
 
 ```
 candy[i] ≥ L[i] = L[i-1] + 1 > max(L[i-1], R[i-1]) = candy[i-1]        (R[i-1] = 1 ≤ L[i-1])
 ```
 
-The falling case is the mirror, through `R`. Equal neighbours constrain nothing. So every rule holds.
+Spadek to lustrzane odbicie, przez `R`. Równi sąsiedzi niczego nie ograniczają. Każda zasada jest
+więc spełniona.
 
-**It is minimal.** Let `c` be *any* legal handout. Then `c[i] ≥ L[i]` by induction along the ascent:
-`c[i] ≥ 1 = L[i]` where the chain breaks, and `c[i] > c[i-1] ≥ L[i-1]` where it does not, so
-`c[i] ≥ L[i-1] + 1 = L[i]`. Symmetrically `c[i] ≥ R[i]`, hence `c[i] ≥ max(L[i], R[i])` at every
-index. A legal handout that meets every one of those bounds exactly is therefore *the* cheapest, and
-the previous paragraph showed this one is legal. No exchange argument needed: the minimum is forced
-pointwise, not just in total.
+**Jest minimalne.** Niech `c` będzie _dowolnym_ poprawnym rozdaniem. Wtedy `c[i] ≥ L[i]` przez
+indukcję wzdłuż wzrostu: `c[i] ≥ 1 = L[i]` tam, gdzie łańcuch się urywa, i `c[i] > c[i-1] ≥ L[i-1]`
+tam, gdzie się nie urywa, więc `c[i] ≥ L[i-1] + 1 = L[i]`. Symetrycznie `c[i] ≥ R[i]`, stąd
+`c[i] ≥ max(L[i], R[i])` na każdym indeksie. Poprawne rozdanie, które spełnia każde z tych ograniczeń
+dokładnie, jest więc _tym_ najtańszym, a poprzedni akapit pokazał, że to rozdanie jest poprawne.
+Argument wymiany nie jest potrzebny: minimum jest wymuszone punktowo, a nie tylko w sumie.
 
-## The DP underneath: longest chain in a constraint graph
+## DP pod spodem: najdłuższy łańcuch w grafie ograniczeń
 
-Draw an edge `j → i` for each adjacent pair where `ratings[i] > ratings[j]` — read as "`i` must
-outbid `j`". The rules are then exactly "`candy[i]` exceeds every predecessor", so
+Narysuj krawędź `j → i` dla każdej sąsiedniej pary, w której `ratings[i] > ratings[j]`, czytaną jako
+„`i` musi przebić `j`”. Zasady to wtedy dokładnie „`candy[i]` przewyższa każdego poprzednika”, więc
 
 ```
-candy[i] = 1 + (length of the longest chain of edges ending at i)
+candy[i] = 1 + (długość najdłuższego łańcucha krawędzi kończącego się w i)
 ```
 
-which is longest-path-in-a-DAG, the canonical shape of a dynamic program. Ratings strictly increase
-along every edge, so no chain can revisit an index; on a line, a chain that never revisits is a
-contiguous run in one direction. **That is why two prefix scans suffice** — a chain cannot turn
-around, so it is either entirely leftward or entirely rightward, and `L` and `R` measure exactly
-those two.
+czyli najdłuższa ścieżka w DAG, kanoniczny kształt programowania dynamicznego. Oceny ściśle rosną
+wzdłuż każdej krawędzi, więc żaden łańcuch nie wraca do indeksu; na prostej łańcuch, który nie wraca,
+to ciągły odcinek w jednym kierunku. **Dlatego wystarczą dwa przejścia prefiksowe**: łańcuch nie może
+zawrócić, więc jest w całości w lewo albo w całości w prawo, a `L` i `R` mierzą dokładnie te dwa.
 
-The overlap is the usual one: the chain ending at `i` contains the chain ending at `i-1`. Recomputed
-from scratch per index the scan is Θ(n²) on a monotone line; remembering one number per index makes
-it Θ(n).
+Nakładanie się jest zwykłe: łańcuch kończący się w `i` zawiera łańcuch kończący się w `i-1`. Liczone od
+nowa dla każdego indeksu przejście to Θ(n²) na monotonicznym rzędzie; zapamiętanie jednej liczby na
+indeks daje Θ(n).
 
-## What it is not
+## Czym to nie jest
 
-**Not one greedy pass.** Walking left to right and handing out `previous + 1` on a rise, `1`
-otherwise, is precisely `L` — and it is wrong wherever the line falls:
+**Nie jest jednym zachłannym przejściem.** Przejście od lewej, dające `poprzednik + 1` przy wzroście,
+a `1` w przeciwnym razie, to dokładnie `L` i jest błędne wszędzie, gdzie rząd spada:
 
-| Input | one forward pass | answer |
+| Wejście | jedno przejście do przodu | odpowiedź |
 |---|---|---|
 | `[3, 2, 1]` | `[1, 1, 1]` = 3 | `[3, 2, 1]` = 6 |
 | `[1, 5, 4, 3, 2, 1]` | `[1, 2, 1, 1, 1, 1]` = 7 | `[1, 5, 4, 3, 2, 1]` = 16 |
 
-**Not "local minima get 1".** A child can be owed more than the floor without being a peak:
-`[3, 2, 2, 1]` → `[2, 1, 2, 1]`. The second `2` is neither a local maximum nor rising, but it heads a
-descent, so `R` lifts it.
+**To nie „minima lokalne dostają 1”.** Dziecku może należeć się więcej niż minimum, choć nie jest
+szczytem: `[3, 2, 2, 1]` → `[2, 1, 2, 1]`. Druga `2` nie jest ani maksimum lokalnym, ani wzrostem,
+ale zaczyna spadek, więc `R` ją podnosi.
 
-**Not usefully solved by sorting**, though it is correct: process indices in rating order and set
-`candy[i] = 1 + max` over already-assigned lower-rated neighbours. Every strictly lower neighbour is
-settled by then, so it gives the same handout — at O(n log n), the sort being the only reason it is
-not linear.
+**Sortowanie nie jest użyteczne**, choć daje poprawny wynik: przetwarzaj indeksy według ocen i
+ustaw `candy[i] = 1 + max` po już przydzielonych sąsiadach z niższą oceną. Każdy ściśle niższy sąsiad
+jest wtedy już ustalony, więc wychodzi to samo rozdanie, ale w O(n log n), a sortowanie to jedyny
+powód, dla którego nie jest liniowe.
 
-## The memo table
+## Tabela zapamiętywania
 
-Written as the recurrence reads, the two tables are kept and summed — `candiesWithTable(int[])`:
+Zapisane tak, jak czyta się rekurencję, dwie tabele są trzymane i sumowane, czyli
+`candiesWithTable(int[])`:
 
 ```java
 for (int i = 0; i < n; i++)      left[i]  = i > 0     && r[i] > r[i - 1] ? left[i - 1] + 1  : 1;
@@ -113,127 +114,129 @@ for (int i = n - 1; i >= 0; i--) right[i] = i < n - 1 && r[i] > r[i + 1] ? right
 for (int i = 0; i < n; i++)      total   += Math.max(left[i], right[i]);
 ```
 
-Θ(n) time, O(n) memory — two `int[]` of the line's length. This is the form to *read*; it is the
-recurrence transcribed, and the individual shares survive the call, which the fold discards as it
-goes.
+Czas Θ(n), pamięć O(n): dwa `int[]` długości rzędu. To postać do _czytania_: przepisana rekurencja,
+a poszczególne przydziały przetrwają wywołanie, podczas gdy wersja zwinięta je odrzuca.
 
-**What the memo is worth, and what it is not.** The tables are what turn Θ(n²) into Θ(n): without
-them, `L[i]` and `R[i]` have to be rescanned from `i` back along their runs, and on a monotone line
-every one of those rescans is the full length. [Measured](#measured-ad-hoc), that is 575 ms against
-0.25 ms at n = 80 000.
+**Ile warta jest tabela, a ile nie.** Tabele zamieniają Θ(n²) w Θ(n): bez nich `L[i]` i `R[i]` trzeba
+liczyć od nowa, idąc od `i` wstecz wzdłuż ich odcinków, a na monotonicznym rzędzie każde takie
+przeliczenie ma pełną długość. W pomiarach (sekcja „Pomiary” niżej) to 575 ms wobec 0.25 ms przy
+n = 80 000.
 
-But that is the *whole* of what remembering buys here, and it is worth being exact about why. The
-classic memo picture is Fibonacci: one subproblem requested from many places, the table folding an
-exponential tree down to `n` entries. Nothing like that happens on this recurrence. Every entry has
-exactly one dependent — `L[i]` feeds only `L[i+1]`, `R[i]` only `R[i-1]` — so the dependency graph is
-two chains rather than a tree, and no entry is ever *requested* twice. What the table removes is not
-repeated lookups but repeated **derivation**: re-walking the chain from scratch at every index. That
-is the difference between this drill and [Max Subset Sum](max-subset-sum.md), where the recurrence
-branches and memoising is worth an exponential rather than a factor of `n`.
+Ale to _wszystko_, co daje tu zapamiętywanie, i warto powiedzieć dokładnie dlaczego. Klasyczny obraz
+zapamiętywania to Fibonacci: jeden podproblem potrzebny w wielu miejscach, a tabela zwija
+wykładnicze drzewo do `n` wpisów. Nic takiego nie dzieje się w tej rekurencji. Każdy wpis ma dokładnie
+jednego zależnego (`L[i]` zasila tylko `L[i+1]`, `R[i]` tylko `R[i-1]`), więc graf zależności to dwa
+łańcuchy, a nie drzewo, i żaden wpis nie jest _potrzebny_ dwa razy. Tabela usuwa nie powtarzane
+odczyty, tylko powtarzane **wyprowadzanie**: przechodzenie łańcucha od nowa dla każdego indeksu. To
+różnica między tym ćwiczeniem a [Max Subset Sum](max-subset-sum.md), gdzie rekurencja się rozgałęzia,
+a zapamiętywanie jest warte wykładniczo, a nie czynnik `n`.
 
-Which is also why the table can go. A dependency window that is one index wide does not need an
-array to hold it.
+I dlatego tabela może zniknąć. Okno zależności szerokości jednego indeksu nie potrzebuje tablicy.
 
-## Rolling the table up
+## Zwinięcie tabeli
 
-The memo has O(n) entries but only O(1) of them are ever live: `R` is filled right to left, so it
-cannot be computed on the same forward pass as `L`. It does not have to be *stored*, though — only its
-contribution to the sum, and `R[i] > L[i]` **only inside a descending run**. So walk the descent and
-pay as you go:
+Tabela ma O(n) wpisów, ale żywych jest naraz tylko O(1): `R` wypełnia się od prawej, więc nie da się
+go policzyć w tym samym przejściu do przodu co `L`. Nie trzeba go jednak _przechowywać_, tylko jego
+wkład do sumy, a `R[i] > L[i]` **tylko w środku malejącego odcinka**. Idziemy więc po spadku i płacimy
+na bieżąco:
 
-- extending a descent to length `d` re-indexes the children already in it — each needs one more —
-  and the newcomer takes 1. That is `d` extra candies in total, the gap between two triangular
-  numbers, `d(d+1)/2 − (d−1)d/2`;
-- the peak the descent hangs off needs `d + 1`, but it already holds `ascent + 1` from the climb, so
-  it costs **one more only at the moment the descent outgrows that ascent**, and nothing after.
+- przedłużenie spadku do długości `d` przenumerowuje dzieci już w nim (każde potrzebuje jednego
+  więcej), a nowe dostaje 1. Razem to `d` dodatkowych cukierków, różnica dwóch liczb trójkątnych,
+  `d(d+1)/2 − (d−1)d/2`;
+- szczyt, z którego schodzi spadek, potrzebuje `d + 1`, ale ma już `ascent + 1` ze wzrostu, więc
+  kosztuje **jeden więcej dopiero w chwili, gdy spadek przerośnie ten wzrost**, i potem już nic.
 
-Five numbers carry it: the previous rating, the current `ascent`, the current `descent`, the
-`peakAscent` the descent fell from, and the running total. `[1, 5, 4, 3, 2, 1]`:
+Wystarczy pięć liczb: poprzednia ocena, bieżący `ascent`, bieżący `descent`, `peakAscent`, z którego
+zaczął się spadek, i suma bieżąca. `[1, 5, 4, 3, 2, 1]`:
 
 ```
- i  rating  step   ascent descent peakAscent | delta   total   handout so far
- 0       1  first       0       0          0 |    +1       1   [1]
- 1       5  rise        1       0          1 |    +2       3   [1,2]
- 2       4  fall        0       1          1 |    +1       4   [1,2,1]      peak still tall enough
- 3       3  fall        0       2          1 |    +3       7   [1,3,2,1]    descent outgrew it: +1
- 4       2  fall        0       3          1 |    +4      11   [1,4,3,2,1]
- 5       1  fall        0       4          1 |    +5      16   [1,5,4,3,2,1]
+ i  ocena  krok      ascent descent peakAscent | delta   suma   rozdanie do tej pory
+ 0      1  pierwszy       0       0          0 |    +1      1   [1]
+ 1      5  wzrost         1       0          1 |    +2      3   [1,2]
+ 2      4  spadek         0       1          1 |    +1      4   [1,2,1]      szczyt wciąż dość wysoki
+ 3      3  spadek         0       2          1 |    +3      7   [1,3,2,1]    spadek go przerósł: +1
+ 4      2  spadek         0       3          1 |    +4     11   [1,4,3,2,1]
+ 5      1  spadek         0       4          1 |    +5     16   [1,5,4,3,2,1]
 ```
 
-A plateau resets all three counters — equal neighbours constrain neither child, so a run cannot span
-one. That single line is what keeps `[3, 2, 2, 1]` at 6: the descent restarts after the plateau
-instead of running through it, which would bill it as a four-step fall and charge 10.
+Płaskowyż zeruje wszystkie trzy liczniki: równi sąsiedzi nie ograniczają żadnego z dzieci, więc
+odcinek nie może przez niego przechodzić. Ta jedna linia trzyma `[3, 2, 2, 1]` na 6: spadek zaczyna
+się od nowa po płaskowyżu, zamiast przez niego przechodzić, co policzyłoby go jako spadek o czterech
+krokach i kosztowało 10.
 
-## Complexity ladder
+## Drabina złożoności
 
-| Approach | Time | Space | |
+| Podejście | Czas | Pamięć | |
 |---|---|---|---|
-| Search every handout in `{1..n}ⁿ` | Θ(nⁿ) | O(n) | the test's oracle, `n ≤ 6` |
-| Start at 1s, repair violations until stable | O(n²) | O(n) | the same least fixed point, reached by sweeps |
-| Sort by rating, assign in order | O(n log n) | O(n) | correct; the sort is the whole cost |
-| Rescan each run, nothing remembered | Θ(n²) | O(1) | what the memo table removes |
-| Two passes, `L` and `R` kept | Θ(n) | O(n) | `candiesWithTable` — the readable form |
-| **One pass, counters only** | **Θ(n)** | **O(1)** | **`candies`** — the same memo, rolled up |
+| Przeszukanie każdego rozdania w `{1..n}ⁿ` | Θ(nⁿ) | O(n) | wzorzec w testach, `n ≤ 6` |
+| Start od jedynek, naprawianie naruszeń aż do stabilności | O(n²) | O(n) | ten sam najmniejszy punkt stały, osiągany przejściami |
+| Sortowanie według ocen, przydział po kolei | O(n log n) | O(n) | poprawne; cały koszt to sortowanie |
+| Liczenie każdego odcinka od nowa, bez pamięci | Θ(n²) | O(1) | to usuwa tabela |
+| Dwa przejścia, `L` i `R` w tablicach | Θ(n) | O(n) | `candiesWithTable`: postać czytelna |
+| **Jedno przejście, same liczniki** | **Θ(n)** | **O(1)** | **`candies`**: ta sama tabela, zwinięta |
 
-Θ(n) is optimal: changing one rating can change the total, so every rating must be read.
+Θ(n) to optimum: zmiana jednej oceny może zmienić sumę, więc trzeba przeczytać każdą ocenę.
 
-## The answer does not fit in an `int`
+## Odpowiedź nie mieści się w `int`
 
-The bound `n ≤ 10⁵` is already past `Integer.MAX_VALUE`. A strictly increasing line of 100 000
-children costs `100000·100001/2 = 5 000 050 000` candies — 2.3× an `int`. HackerRank's signature
-returns `long` for this reason, and an `int` accumulator would silently wrap to `705 082 704`.
-Per-child counts stay small (at most `n`); only the sum overflows.
+Ograniczenie `n ≤ 10⁵` już przekracza `Integer.MAX_VALUE`. Ściśle rosnący rząd 100 000 dzieci kosztuje
+`100000·100001/2 = 5 000 050 000` cukierków, 2.3 razy więcej niż mieści `int`. Sygnatura z HackerRank
+zwraca z tego powodu `long`, a akumulator `int` po cichu zawinąłby się do `705 082 704`. Przydziały
+dla pojedynczych dzieci są małe (najwyżej `n`); przepełnia się tylko suma.
 
-## Measured, ad hoc
+## Pomiary
 
-Not reproduced by the build — taken once on this machine, JDK 25, `-Xmx512m`, after warm-up.
+Nie odtwarzane przy budowaniu: zmierzone raz na tej maszynie, JDK 25, `-Xmx512m`, po rozgrzaniu.
 
-**What the memo table buys**, on the worst case for going without it — one ascending run, so every
-rescan is the full length. The first two columns are the same recurrence, remembered and not
-(one timed run each, so the sub-millisecond columns are mostly timer):
+**Co daje tabela**, na najgorszym przypadku dla wersji bez niej: jeden rosnący odcinek, więc każde
+przeliczenie ma pełną długość. Dwie pierwsze kolumny to ta sama rekurencja z zapamiętywaniem i bez
+(po jednym pomiarze, więc kolumny poniżej milisekundy to głównie dokładność zegara):
 
-| n (one ascending run) | no memo, rescan each run | `candiesWithTable` | `candies` |
+| n (jeden rosnący odcinek) | bez tabeli, liczenie od nowa | `candiesWithTable` | `candies` |
 |---:|---:|---:|---:|
 | 20 000 | 42.0 ms | 0.15 ms | 0.27 ms |
 | 40 000 | 143.3 ms | 0.37 ms | 0.07 ms |
 | 80 000 | 574.8 ms | 0.25 ms | 0.03 ms |
 
-The first column quadruples per doubling — Θ(n²), cleanest across the last two rows at 4.01×.
+Pierwsza kolumna rośnie czterokrotnie przy podwojeniu: Θ(n²), najczyściej w dwóch ostatnich wierszach,
+4.01 razy.
 
-**What dropping the table buys**, once both are linear (best of 9):
+**Co daje porzucenie tabeli**, gdy obie wersje są liniowe (najlepszy z 9):
 
-| n = 10 000 000, random walk | Time | Table memory |
+| n = 10 000 000, błądzenie losowe | Czas | Pamięć tabel |
 |---|---:|---:|
 | `candiesWithTable` | 108 ms | 80 MB |
 | `candies` | 42 ms | 0 |
 
-**2.5×**, from one pass over 40 MB of input instead of three passes moving 240 MB between RAM and the
-two tables — the recurrence is memory bound, so the table the fold does not allocate is also the time
-it does not spend. And since it holds no state proportional to `n`, a line can be priced straight off
-a stream: 200 000 000 children in 97 ms, on a heap that could not have held the input array (762 MB)
-at all.
+**2.5 razy**, z jednego przejścia po 40 MB wejścia zamiast trzech przejść przenoszących 240 MB między
+RAM a dwiema tabelami: rekurencja jest ograniczona przepustowością pamięci, więc tabela, której
+wersja zwinięta nie alokuje, to też czas, którego nie wydaje. A ponieważ nie trzyma stanu
+proporcjonalnego do `n`, rząd można wycenić prosto ze strumienia: 200 000 000 dzieci w 97 ms, na
+stercie, która w ogóle nie zmieściłaby tablicy wejściowej (762 MB).
 
-## Test oracles
+## Wzorce w testach
 
-Three independent checks, the house pattern:
+Trzy niezależne sprawdzenia, jak wszędzie w tym repozytorium:
 
-- **exhaustive** — every line of up to 6 children is priced by searching all of `{1..n}ⁿ` for the
-  cheapest legal handout. No minimal handout gives a child more than `n` (no chain is longer than the
-  line), so the search is complete, and it checks the *problem statement* rather than a rephrasing of
-  the recurrence. Two enumerations feed it: all lines over 3 rating values, and — since three values
-  cannot build a run longer than three — one representative of each of the `3ⁿ⁻¹` rise/level/fall
-  shapes, which is where the long runs and the peak rule get their exhaustive check;
-- **two-pass table** — the same recurrence with `L` and `R` actually materialised, on 40 000 random
-  lines and twice at 10 000 000 (uniform, and a ±1 walk so runs are long and the peak bookkeeping is
-  under load). Never storing `R` is the one step that could plausibly break at scale. The test keeps
-  its own copy of this rather than calling `candiesWithTable`, so that the oracle stays independent
-  of the code under test; both shipped forms are then checked against it and against each other;
-- **closed forms** — a strictly increasing line of `n` costs `n(n+1)/2`, checked at 10⁵ for the
-  `long` boundary and at 2·10⁸ through a stream, where passing at all is the evidence that the state
-  really is O(1).
+- **wyczerpujące**: każdy rząd do 6 dzieci jest wyceniany przez przeszukanie całego `{1..n}ⁿ` w
+  poszukiwaniu najtańszego poprawnego rozdania. Żadne minimalne rozdanie nie daje dziecku więcej niż
+  `n` (żaden łańcuch nie jest dłuższy niż rząd), więc przeszukanie jest pełne i sprawdza _treść
+  zadania_, a nie przeformułowanie rekurencji. Zasilają je dwa wyliczenia: wszystkie rzędy z 3
+  wartości ocen oraz, ponieważ z trzech wartości nie zbuduje się odcinka dłuższego niż trzy, jeden
+  przedstawiciel każdego z `3ⁿ⁻¹` kształtów wzrost/płasko/spadek, i tam długie odcinki oraz zasada
+  szczytu dostają wyczerpujące sprawdzenie;
+- **tabela z dwóch przejść**: ta sama rekurencja z `L` i `R` naprawdę zapisanymi, na 40 000 losowych
+  rzędach i dwa razy przy 10 000 000 (jednostajnie i jako błądzenie ±1, żeby odcinki były długie, a
+  księgowość szczytu pod obciążeniem). Nieprzechowywanie `R` to jedyny krok, który mógłby się
+  zepsuć w skali. Test trzyma własną kopię tej wersji zamiast wołać `candiesWithTable`, żeby wzorzec
+  był niezależny od testowanego kodu; obie postacie z kodu są potem sprawdzane względem niego i
+  względem siebie;
+- **wzory zamknięte**: ściśle rosnący rząd `n` dzieci kosztuje `n(n+1)/2`, sprawdzone przy 10⁵ dla
+  granicy `long` i przy 2·10⁸ przez strumień, gdzie samo przejście testu jest dowodem, że stan
+  naprawdę zajmuje O(1).
 
-## See also
+## Zobacz też
 
-- [Max Subset Sum](max-subset-sum.md) — the same "roll the table up to a couple of variables" move,
-  there because the transition reaches back only two states, here because one of the two directions
-  can be paid off as it is walked.
+- [Max Subset Sum](max-subset-sum.md): ten sam ruch „zwiń tabelę do kilku zmiennych”, tam dlatego,
+  że przejście sięga tylko dwa stany wstecz, tutaj dlatego, że jeden z dwóch kierunków da się spłacić
+  w trakcie przechodzenia.

@@ -24,33 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link ReentrantLock}'s contract, and the places where it is <em>not</em> an object-shaped
- * {@code synchronized}. Like {@link SemaphoreTest} these tests pin down the platform rather than
- * this repository's code; several of them are the exact counterpart of a {@code Semaphore}
- * behaviour, and the contrast is the point.
- *
- * <ol>
- *   <li>A lock has an owner, and holds are <b>counted</b>: one {@code unlock} per {@code lock},
- *       and nobody else may unlock it — where a permit has no owner at all.</li>
- *   <li>{@code lock()} cannot be interrupted. It swallows the interrupt, parks anyway, and
- *       reasserts the flag on the way out; {@code lockInterruptibly()} is the one that gives up.</li>
- *   <li>{@code Condition.await()} releases <b>every</b> hold and restores them all — and it
- *       re-acquires the lock before it will even throw {@link InterruptedException}.</li>
- *   <li>Fairness orders the queue and costs an order of magnitude; {@code tryLock()} barges
- *       regardless, exactly as {@code Semaphore.tryAcquire()} does.</li>
- *   <li>The monitoring methods ({@code getHoldCount}, {@code hasQueuedThread}, {@code hasWaiters})
- *       are what make all of the above testable without a stopwatch.</li>
- * </ol>
- */
 class ReentrantLockTest {
 
     private static final long JOIN_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
-    /** Settle time for "and then nothing happened" observations. */
     private static final long OBSERVE_MILLIS = 200;
-
-    // ---------- 1. holds are counted, and the lock has an owner ----------
 
     @Test
     void holdsAreCountedAndEveryOneNeedsItsOwnUnlock() {
@@ -73,7 +51,6 @@ class ReentrantLockTest {
         assertEquals(0, lock.getHoldCount());
         assertFalse(lock.isLocked());
 
-        // and unlike Semaphore.release(), the extra unlock is an error rather than a free permit
         assertThrows(IllegalMonitorStateException.class, lock::unlock);
         assertEquals(0, lock.getHoldCount(), "the failed unlock must not have moved anything");
     }
@@ -81,8 +58,6 @@ class ReentrantLockTest {
     @Test
     @Timeout(30)
     void onlyTheOwnerMayUnlock() throws InterruptedException {
-        // the sharpest difference from Semaphore, where any thread may release a permit it never
-        // acquired. A lock knows who holds it, so a foreign unlock is rejected outright.
         ReentrantLock lock = new ReentrantLock();
         lock.lock();
 
@@ -136,13 +111,11 @@ class ReentrantLockTest {
         assertFalse(lock.isLocked());
     }
 
-    // ---------- 2. lock() is not interruptible; lockInterruptibly() is ----------
-
     @Test
     @Timeout(60)
     void lockSwallowsAnInterruptAndReassertsItOnTheWayOut() throws InterruptedException {
         ReentrantLock lock = new ReentrantLock();
-        lock.lock();                                   // the test thread is the obstacle
+        lock.lock();
 
         AtomicBoolean acquired = new AtomicBoolean();
         AtomicBoolean interruptSurvived = new AtomicBoolean();
@@ -150,7 +123,7 @@ class ReentrantLockTest {
 
         Thread waiter = new Thread(() -> {
             started.countDown();
-            lock.lock();                               // parks; an interrupt will not free it
+            lock.lock();
             try {
                 acquired.set(true);
                 interruptSurvived.set(Thread.currentThread().isInterrupted());
@@ -170,7 +143,7 @@ class ReentrantLockTest {
         assertTrue(lock.hasQueuedThread(waiter), "the interrupt must not have cancelled the wait");
         assertTrue(waiter.isAlive());
 
-        lock.unlock();                                 // only this frees it
+        lock.unlock();
         waiter.join(JOIN_MILLIS);
         assertTrue(acquired.get());
         assertTrue(interruptSurvived.get(),
@@ -213,14 +186,14 @@ class ReentrantLockTest {
     @Test
     @Timeout(30)
     void anAlreadyInterruptedThreadFailsLockInterruptiblyImmediately() {
-        ReentrantLock lock = new ReentrantLock();       // free: nothing to wait for
+        ReentrantLock lock = new ReentrantLock();
         Thread.currentThread().interrupt();
         try {
             assertThrows(InterruptedException.class, lock::lockInterruptibly);
             assertFalse(lock.isLocked(), "the throw must not have taken the lock");
             assertFalse(Thread.currentThread().isInterrupted(), "throwing clears the flag");
         } finally {
-            Thread.interrupted();                        // never leak an interrupt into the next test
+            Thread.interrupted();
         }
     }
 
@@ -245,8 +218,6 @@ class ReentrantLockTest {
         lock.unlock();
     }
 
-    // ---------- 3. Condition: await releases every hold, and re-acquires before returning ----------
-
     @Test
     @Timeout(60)
     void awaitReleasesEveryHoldAndRestoresThemAll() throws InterruptedException {
@@ -257,8 +228,8 @@ class ReentrantLockTest {
 
         Thread waiter = new Thread(() -> {
             lock.lock();
-            lock.lock();                                 // held twice — and it is not obvious
-            try {                                        // that await gives back both
+            lock.lock();
+            try {
                 holdsBefore.set(lock.getHoldCount());
                 ready.await();
                 holdsAfter.set(lock.getHoldCount());
@@ -272,8 +243,6 @@ class ReentrantLockTest {
         waiter.setDaemon(true);
         waiter.start();
 
-        // taking the lock ourselves *is* the assertion: a doubly-held lock is free while its
-        // owner is inside await(). hasWaiters requires the lock, hence the take-and-check loop.
         while (true) {
             if (lock.tryLock()) {
                 if (lock.hasWaiters(ready)) break;
@@ -295,8 +264,6 @@ class ReentrantLockTest {
     @Test
     @Timeout(60)
     void anInterruptedAwaitStillWaitsForTheLockBeforeItThrows() throws InterruptedException {
-        // await's contract: it always returns holding the lock — including when it is throwing
-        // InterruptedException. So an interrupt cannot pull a thread out of a critical section.
         ReentrantLock lock = new ReentrantLock();
         Condition ready = lock.newCondition();
         AtomicReference<Throwable> thrown = new AtomicReference<>();
@@ -323,7 +290,6 @@ class ReentrantLockTest {
             }
             Thread.onSpinWait();
         }
-        // we hold the lock; interrupting now cannot let the waiter out, because it must re-acquire
         waiter.interrupt();
         Thread.sleep(OBSERVE_MILLIS);
         assertNull(thrown.get(), "await returned without the lock, which its contract forbids");
@@ -371,7 +337,7 @@ class ReentrantLockTest {
 
         lock.lock();
         try {
-            ready.signal();                              // only a signal gets it out
+            ready.signal();
         } finally {
             lock.unlock();
         }
@@ -385,14 +351,12 @@ class ReentrantLockTest {
         ReentrantLock lock = new ReentrantLock();
         Condition ready = lock.newCondition();
 
-        // every Condition method requires the lock, and says so rather than corrupting anything
         assertThrows(IllegalMonitorStateException.class, ready::signal);
         assertThrows(IllegalMonitorStateException.class, ready::signalAll);
         assertThrows(IllegalMonitorStateException.class, ready::await);
         assertThrows(IllegalMonitorStateException.class, () -> ready.await(1, TimeUnit.MILLISECONDS));
         assertThrows(IllegalMonitorStateException.class, () -> lock.hasWaiters(ready));
 
-        // and a condition belongs to exactly one lock
         ReentrantLock other = new ReentrantLock();
         other.lock();
         try {
@@ -436,7 +400,7 @@ class ReentrantLockTest {
                 Thread.onSpinWait();
                 lock.lock();
             }
-            ready.signal();                              // exactly one is transferred
+            ready.signal();
         } finally {
             lock.unlock();
         }
@@ -457,9 +421,6 @@ class ReentrantLockTest {
     @Test
     @Timeout(60)
     void twoConditionsOnOneLockAreABoundedBuffer() throws InterruptedException {
-        // the reason ReentrantLock has newCondition() at all: a monitor has one wait set, so
-        // "not full" and "not empty" share it and every put wakes every take. Two conditions
-        // signal exactly the threads that can make progress.
         BoundedBuffer buffer = new BoundedBuffer(4);
         int items = 2_000;
         AtomicLong sum = new AtomicLong();
@@ -486,7 +447,6 @@ class ReentrantLockTest {
                 "the buffer held " + buffer.maxObservedSize() + " items behind a bound of 4");
     }
 
-    /** A textbook two-condition bounded buffer — the shape {@code Condition} exists for. */
     private static final class BoundedBuffer {
         private final ReentrantLock lock = new ReentrantLock();
         private final Condition notFull = lock.newCondition();
@@ -499,12 +459,12 @@ class ReentrantLockTest {
         void put(int value) throws InterruptedException {
             lock.lock();
             try {
-                while (count == items.length) notFull.await();   // always a loop, never an if
+                while (count == items.length) notFull.await();
                 items[tail] = value;
                 tail = (tail + 1) % items.length;
                 count++;
                 maxObserved = Math.max(maxObserved, count);
-                notEmpty.signal();                               // wake a taker, not every putter
+                notEmpty.signal();
             } finally {
                 lock.unlock();
             }
@@ -529,14 +489,12 @@ class ReentrantLockTest {
         int maxObservedSize() { lock.lock(); try { return maxObserved; } finally { lock.unlock(); } }
     }
 
-    // ---------- 4. fairness is ordering, and it is not free ----------
-
     @Test
     @Timeout(60)
     void aFairLockGrantsInArrivalOrder() throws InterruptedException {
         ReentrantLock lock = new ReentrantLock(true);
         List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-        lock.lock();                                     // hold everyone up while they queue
+        lock.lock();
 
         Thread[] waiters = new Thread[5];
         for (int i = 0; i < waiters.length; i++) {
@@ -551,7 +509,6 @@ class ReentrantLockTest {
             });
             waiters[i].setDaemon(true);
             waiters[i].start();
-            // enqueue them one at a time, so "arrival order" is a fact rather than a hope
             while (!lock.hasQueuedThread(waiters[i])) Thread.onSpinWait();
         }
         assertEquals(5, lock.getQueueLength());
@@ -565,9 +522,6 @@ class ReentrantLockTest {
     @Test
     @Timeout(60)
     void anUnfairLockStillServesEveryoneWhoIsAlreadyQueued() throws InterruptedException {
-        // barging is about newcomers, not about scrambling the queue: with every thread already
-        // parked there is nobody to barge, so this asserts only that nobody is dropped. Where
-        // unfairness actually shows is the handoff, measured below.
         ReentrantLock lock = new ReentrantLock(false);
         List<Integer> order = Collections.synchronizedList(new ArrayList<>());
         lock.lock();
@@ -594,18 +548,10 @@ class ReentrantLockTest {
         assertEquals(List.of(0, 1, 2, 3, 4), order.stream().sorted().toList(), "a waiter was lost");
     }
 
-    /** What one handoff measurement produced. */
     private record Handoff(long acquisitions, long selfSuccessions) {
-        /** Share of acquisitions where the lock went straight back to the thread that released it. */
         double selfRate() { return acquisitions == 0 ? 0 : (double) selfSuccessions / acquisitions; }
     }
 
-    /**
-     * Counts the handoff rather than the winners, for the reason spelled out in
-     * {@code SemaphoreTest}: per-thread counts over a fixed window are dominated by startup skew
-     * and rank a fair lock as the less fair one. Barging is a question about who gets the lock
-     * next, so that is what this counts.
-     */
     private static Handoff handoff(int threads, int millis, boolean fair) throws InterruptedException {
         ReentrantLock lock = new ReentrantLock(fair);
         AtomicInteger lastHolder = new AtomicInteger(-1);
@@ -628,14 +574,14 @@ class ReentrantLockTest {
                     return;
                 }
                 while (System.nanoTime() < deadline[0]) {
-                    for (int i = 0; i < 64; i++) {           // amortise the clock read
+                    for (int i = 0; i < 64; i++) {
                         lock.lock();
                         try {
                             if (lastHolder.getAndSet(id) == id) selfs++;
                             mine++;
-                            Thread.onSpinWait();             // a tiny critical section
+                            Thread.onSpinWait();
                         } finally {
-                            lock.unlock();                   // ...then grab it straight back
+                            lock.unlock();
                         }
                     }
                 }
@@ -645,7 +591,7 @@ class ReentrantLockTest {
             workers[t].setDaemon(true);
             workers[t].start();
         }
-        ready.await();                                       // no startup skew inside the window
+        ready.await();
         deadline[0] = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis);
         go.countDown();
         for (Thread w : workers) w.join(TimeUnit.SECONDS.toMillis(30));
@@ -670,13 +616,10 @@ class ReentrantLockTest {
                 Math.round(100 * fair.selfRate()) + "% self-succession on a fair lock");
     }
 
-    // ---------- 5. mutual exclusion actually excludes ----------
-
     @ParameterizedTest(name = "{0} threads")
     @ValueSource(ints = {2, 8, 24})
     @Timeout(60)
     void theLockIsTheOnlyThingMakingTheIncrementSafe(int threads) throws InterruptedException {
-        // a deliberately non-atomic critical section: read, spin, write back
         ReentrantLock lock = new ReentrantLock();
         int perThread = 5_000;
         long[] counter = new long[1];
@@ -715,9 +658,6 @@ class ReentrantLockTest {
         assertFalse(lock.isLocked(), "every lock was matched by an unlock");
     }
 
-    // ---------- helpers ----------
-
-    /** Starts a daemon that holds {@code lock} from {@code held} until {@code release}. */
     private static Thread holderOf(ReentrantLock lock, CountDownLatch held, CountDownLatch release) {
         Thread owner = new Thread(() -> {
             lock.lock();

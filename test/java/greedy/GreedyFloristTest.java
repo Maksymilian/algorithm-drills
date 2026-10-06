@@ -38,7 +38,6 @@ class GreedyFloristTest {
                 Arguments.of("more friends than flowers", 5, new int[]{1, 2, 3}, 6L),
                 Arguments.of("exactly as many friends as flowers", 3, new int[]{1, 2, 3}, 6L),
 
-                // k = 1 is the worst case: multipliers 1, 2, 3, ... all fall on one buyer.
                 Arguments.of("one friend buys everything", 1, new int[]{1, 2, 3}, 10L),
                 Arguments.of("one friend, descending input", 1, new int[]{3, 2, 1}, 10L),
 
@@ -46,7 +45,6 @@ class GreedyFloristTest {
                 Arguments.of("free flowers cost nothing whenever bought", 2, new int[]{0, 0, 5}, 5L),
                 Arguments.of("all free", 2, new int[]{0, 0, 0}, 0L),
 
-                // Two full blocks then a partial one: k = 2 over 5 flowers is x1 x1 x2 x2 x3.
                 Arguments.of("partial last block", 2, new int[]{10, 20, 30, 40, 50},
                         50L + 40L + 2 * 30L + 2 * 20L + 3 * 10L)
         );
@@ -58,14 +56,12 @@ class GreedyFloristTest {
         assertEveryMethodReturns(expected, k, c, name);
     }
 
-    // --- what each method promises about the array afterwards ------------------------------------
-
     @Test
     void inPlaceLeavesTheArraySorted() {
         int[] c = {2, 5, 6};
 
         assertEquals(15L, getMinimumCostInPlace(2, c));
-        assertArrayEquals(new int[]{2, 5, 6}, c);            // already ascending
+        assertArrayEquals(new int[]{2, 5, 6}, c);
 
         int[] shuffled = {6, 2, 5};
         assertEquals(15L, getMinimumCostInPlace(2, shuffled));
@@ -98,8 +94,6 @@ class GreedyFloristTest {
         assertThrows(IllegalArgumentException.class, () -> getMinimumCostInPlace(2, withNegative));
         assertArrayEquals(new int[]{3, -1, 2}, withNegative);
     }
-
-    // --- the witness --------------------------------------------------------------------------------
 
     @Test
     void thePlanIsThePurchaseItPrices() {
@@ -137,7 +131,6 @@ class GreedyFloristTest {
         assertEquals(0, plan[4].length);
     }
 
-    /** Sample 1's own walkthrough: one friend takes two flowers, dearest first. */
     @Test
     void thePlanMatchesTheWorkedSample() {
         int[][] plan = purchasePlan(2, new int[]{2, 5, 6});
@@ -148,8 +141,6 @@ class GreedyFloristTest {
         assertEquals(1, plan[1].length, "the other buys one");
         assertEquals(6, plan[0][0], "and the busy friend starts with the dearest flower");
     }
-
-    // --- the input contract --------------------------------------------------------------------------
 
     @Test
     void rejectsNullInput() {
@@ -183,21 +174,15 @@ class GreedyFloristTest {
         assertThrows(NullPointerException.class, () -> getMinimumCost(2, withNull));
     }
 
-    /** The histogram is the one method with a precondition on the values, so it says so. */
     @Test
     void countingRejectsPricesTooLargeToBucket() {
         assertEquals(10_000_000L, getMinimumCostByCounting(1, new int[]{10_000_000}));
         assertThrows(IllegalArgumentException.class,
                 () -> getMinimumCostByCounting(1, new int[]{10_000_001}));
 
-        // the others have no such limit
         assertEquals(10_000_001L, getMinimumCostAsLong(1, new int[]{10_000_001}));
     }
 
-    /**
-     * The platform returns {@code int}, and the problem's own bounds overrun it: a hundred flowers
-     * at a million each, bought by one friend, is 10<sup>6</sup> * (1 + 2 + ... + 100).
-     */
     @Test
     void theTotalOutgrowsAnIntWithinTheStatedBounds() {
         int[] c = new int[100];
@@ -209,18 +194,11 @@ class GreedyFloristTest {
         assertThrows(ArithmeticException.class, () -> getMinimumCost(1, c));
     }
 
-    /**
-     * The total outgrowing an {@code int} is not the only overflow on offer: a <i>single</i>
-     * flower's price times its multiplier can pass {@link Integer#MAX_VALUE} on its own, which it
-     * does here from the 2148th purchase onwards. The widening therefore has to happen at the
-     * multiplication and not merely at the accumulation - {@code total += price * multiplier} with
-     * {@code total} a {@code long} would still wrap the product before adding it.
-     */
     @Test
     void oneFlowersCostAloneCanOutgrowAnInt() {
         int n = 3_000;
         int[] c = new int[n];
-        Arrays.fill(c, 1_000_000);                         // one friend, so multipliers run 1..3000
+        Arrays.fill(c, 1_000_000);
 
         long expected = 1_000_000L * n * (n + 1) / 2;
         assertEquals(4_501_500_000_000L, expected);
@@ -232,17 +210,6 @@ class GreedyFloristTest {
         assertThrows(ArithmeticException.class, () -> getMinimumCost(1, c));
     }
 
-    // --- cross-checks against independent oracles -------------------------------------------------------
-
-    /**
-     * The load-bearing test. Every method assumes the multipliers are forced into blocks of
-     * {@code k} and that the dearest flower takes the smallest one; this enumerates every way to
-     * assign flowers to friends and assumes neither.
-     * <p>
-     * Within one friend the multipliers really are forced to {@code 1 .. t}, so the oracle is free
-     * to pair that friend's own flowers dearest-first - which is why walking a descending array is
-     * enough to evaluate an assignment, and why the oracle stays O(n) per assignment.
-     */
     @Test
     void matchesBruteForceOverEveryAssignmentOfFlowersToFriends() {
         Random random = new Random(20260914L);
@@ -251,7 +218,7 @@ class GreedyFloristTest {
             for (int k = 1; k <= 4; k++) {
                 for (int trial = 0; trial < 6; trial++) {
                     int[] c = trial % 2 == 0
-                            ? random.ints(n, 0, 5).toArray()      // ties everywhere
+                            ? random.ints(n, 0, 5).toArray()
                             : random.ints(n, 0, 1000).toArray();
 
                     assertEveryMethodReturns(bruteForceMinimumCost(k, c), k, c,
@@ -261,23 +228,17 @@ class GreedyFloristTest {
         }
     }
 
-    /**
-     * Why negative prices are rejected rather than answered. The forced-multiplier argument assumes
-     * a small multiplier is desirable; below zero the opposite holds, and a single friend buying
-     * both flowers beats the blocks of {@code k} that every method here would hand out.
-     */
     @Test
     void negativePricesWouldMakeTheGreedyAnswerWrong() {
         int[] c = {-10, 1};
 
-        assertEquals(-19L, bruteForceMinimumCost(2, c));          // one friend buys both: 1 - 20
-        assertEquals(-9L, costOfBlocksOfK(2, c));                 // what the greedy rule would say
+        assertEquals(-19L, bruteForceMinimumCost(2, c));
+        assertEquals(-9L, costOfBlocksOfK(2, c));
         assertTrue(bruteForceMinimumCost(2, c) < costOfBlocksOfK(2, c));
 
-        assertRejected(2, c, "the counterexample itself");         // so no method answers it
+        assertRejected(2, c, "the counterexample itself");
     }
 
-    /** Larger inputs, against the formula applied to an independently sorted copy. */
     @Test
     void matchesTheBlockFormulaOnRandomInput() {
         Random random = new Random(11L);
@@ -291,12 +252,6 @@ class GreedyFloristTest {
         }
     }
 
-    // --- large inputs ---------------------------------------------------------------------------------
-
-    /**
-     * A million identical flowers in a thousand blocks of a thousand, so the total is known in
-     * closed form: {@code 7 * 1000 * (1 + 2 + ... + 1000)}. It also overruns an {@code int}.
-     */
     @Test
     void pricesAMillionFlowers() {
         int n = 1_000_000;
@@ -314,7 +269,6 @@ class GreedyFloristTest {
         });
     }
 
-    /** Five million flowers priced across the problem's whole range, methods against each other. */
     @Test
     void pricesFiveMillionFlowersEveryWhichWay() {
         int n = 5_000_000;
@@ -329,8 +283,6 @@ class GreedyFloristTest {
             assertEquals(expected, costOfPlan(purchasePlan(k, c)));
         });
     }
-
-    // --- helpers ----------------------------------------------------------------------------------------
 
     private static void assertEveryMethodReturns(long expected, int k, int[] c, String where) {
         assertEquals(expected, getMinimumCostAsLong(k, c), "getMinimumCostAsLong: " + where);
@@ -377,12 +329,6 @@ class GreedyFloristTest {
         assertEquals(c.length, planted, "plan must buy every flower: " + where);
     }
 
-    // --- reference implementations --------------------------------------------------------------------
-
-    /**
-     * The definition: every assignment of flowers to friends, {@code k^n} of them. Exponential, so
-     * small {@code n} only.
-     */
     private static long bruteForceMinimumCost(int k, int[] c) {
         int[] descending = c.clone();
         Arrays.sort(descending);
@@ -401,8 +347,8 @@ class GreedyFloristTest {
 
             long cost = 0;
             long remaining = code;
-            for (int i = 0; i < n; i++) {                   // flowers visited dearest first, so each
-                int friend = (int) (remaining % k);         // friend's own multipliers come out 1,2,3..
+            for (int i = 0; i < n; i++) {
+                int friend = (int) (remaining % k);
                 remaining /= k;
                 cost += (long) descending[i] * ++boughtBy[friend];
             }
@@ -411,7 +357,6 @@ class GreedyFloristTest {
         return n == 0 ? 0L : best;
     }
 
-    /** The block formula written out again, over an independently sorted copy. */
     private static long costOfBlocksOfK(int k, int[] c) {
         int[] descending = c.clone();
         Arrays.sort(descending);
@@ -424,7 +369,6 @@ class GreedyFloristTest {
         return cost;
     }
 
-    /** What a plan actually costs, read straight off the purchase order. */
     private static long costOfPlan(int[][] plan) {
         long cost = 0;
         for (int[] forOneFriend : plan) {

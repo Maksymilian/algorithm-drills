@@ -15,31 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Three ways to compare arrays, and the three different answers they give for the same pair.
- *
- * <p>An array does not override {@code equals}, so reference comparison ({@code ==}, what the
- * request called pointer comparison), {@code a.equals(b)} and {@link Objects#equals} all ask the
- * same question — <em>is this the same object?</em> {@link Arrays#equals} asks about contents one
- * level deep, and {@link Arrays#deepEquals} asks about contents all the way down. Which one is
- * right depends entirely on whether the array holds values or more arrays.
- *
- * <p>Two of these tests invert what {@code ==} says about the <em>elements</em>: {@code NaN} is
- * never {@code ==} itself yet arrays of it compare equal, and {@code 0.0 == -0.0} yet arrays of
- * them do not. {@code Arrays.equals} compares {@code double}s the way {@link Double#equals} does,
- * by bits, not the way {@code ==} does.
- *
- * <p>Nothing here asserts with {@code assertEquals} on an array: that would compare references and
- * quietly test the very bug this file is about, which is why JUnit ships {@code assertArrayEquals}.
- */
 class ArrayComparisonTest {
-
-    // ---------- one dimension: reference identity vs contents ----------
 
     static Stream<Arguments> oneDimensionalPairs() {
         int[] shared = {1, 2, 3};
         return Stream.of(
-                //           label                              a                        b                      same ref  Arrays.equals
                 Arguments.of("equal contents, distinct arrays", new int[]{1, 2, 3},      new int[]{1, 2, 3},      false, true),
                 Arguments.of("the very same array twice",       shared,                 shared,                  true,  true),
                 Arguments.of("different contents",              new int[]{1, 2, 3},     new int[]{1, 9, 3},      false, false),
@@ -60,7 +40,6 @@ class ArrayComparisonTest {
         assertEquals(contentsEqual, contentsEqual(a, b), label + ": Arrays.equals");
     }
 
-    /** {@code Arrays.equals} is overloaded per element type; this picks the right one. */
     private static boolean contentsEqual(Object a, Object b) {
         return switch (a) {
             case int[] ints -> Arrays.equals(ints, (int[]) b);
@@ -86,17 +65,12 @@ class ArrayComparisonTest {
         assertTrue(a.equals(a) && Objects.equals(a, a) && Arrays.equals(a, a), "all agree on one array");
     }
 
-    // ---------- the elements do not have to agree with == either ----------
-
     @Test
     void floatingPointContentsInvertWhatComparisonSays() {
-        // NaN is not == itself, yet arrays of it are equal...
         assertFalse(Double.NaN == Double.NaN);
         assertFalse(Float.NaN == Float.NaN);
         assertTrue(Arrays.equals(new double[]{Double.NaN}, new double[]{Double.NaN}));
 
-        // ...and 0.0 == -0.0, yet arrays of them are not. Arrays.equals compares doubles by bits,
-        // as Double.equals does, so it is an equivalence relation where == is not.
         assertTrue(0.0 == -0.0);
         assertTrue(0l == -0l);
         assertTrue(Arrays.equals(new double[]{0.0}, new double[]{0.0}));
@@ -106,27 +80,20 @@ class ArrayComparisonTest {
 
     @Test
     void boxedElementsAreComparedByValueNotByReference() {
-        // Double.valueOf never caches, so these really are two objects. (The famous version of this
-        // is Integer above 127, which depends on -XX:AutoBoxCacheMax and so is not asserted here.)
         Double[] a = {1.5};
         Double[] b = {1.5};
         assertNotSame(a[0], b[0], "the elements are distinct objects");
         assertTrue(Arrays.equals(a, b), "Arrays.equals compares elements with equals(), not ==");
     }
 
-    // ---------- more than one dimension: shallow vs deep ----------
-
     @Test
     void arraysEqualsIsOnlyOneLevelDeep() {
         int[][] a = {{1, 2}, {3}};
         int[][] b = {{1, 2}, {3}};
 
-        // the elements are themselves arrays, and comparing them uses their identity — so the
-        // shallow answer is no, for exactly the reason a 1-D comparison with == is no
         assertFalse(Arrays.equals(a, b), "the rows are distinct objects, so shallow equality fails");
         assertTrue(Arrays.deepEquals(a, b), "deepEquals recurses into the rows");
 
-        // the same thing, less obviously: an Object[] that happens to hold a primitive array
         Object[] wrapping = {new int[]{1, 2}};
         Object[] wrappingToo = {new int[]{1, 2}};
         assertFalse(Arrays.equals(wrapping, wrappingToo));
@@ -145,14 +112,11 @@ class ArrayComparisonTest {
 
     @Test
     void deepEqualsAgreesWithArraysEqualsWhenThereIsNothingToRecurseInto() {
-        // for a flat Object[] the two are the same question
         String[] a = {"a", "b"};
         String[] b = {"a", "b"};
         assertTrue(Arrays.equals(a, b));
         assertTrue(Arrays.deepEquals(a, b));
     }
-
-    // ---------- nulls ----------
 
     @Test
     void nullsAreComparedPerOverloadNotDereferenced() {
@@ -179,8 +143,6 @@ class ArrayComparisonTest {
         assertTrue(Arrays.deepEquals(nested, nestedToo), "and the same one level down");
     }
 
-    // ---------- comparing part of an array ----------
-
     @Test
     void rangedEqualsComparesOnlyTheWindow() {
         int[] a = {9, 1, 2, 3, 9};
@@ -190,7 +152,6 @@ class ArrayComparisonTest {
         assertTrue(Arrays.equals(a, 1, 4, b, 1, 4), "but [1, 4) is the same in both");
         assertFalse(Arrays.equals(a, 0, 4, b, 0, 4), "widen it by one and the answer flips");
 
-        // windows of different lengths are never equal, wherever they sit
         assertFalse(Arrays.equals(a, 1, 4, b, 1, 3));
         assertTrue(Arrays.equals(a, 2, 2, b, 4, 4), "two empty windows are equal");
     }

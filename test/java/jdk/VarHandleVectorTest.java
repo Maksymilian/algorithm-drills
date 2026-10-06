@@ -22,25 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link VarHandleVector}: the two kinds of "vector" a {@link VarHandle} can actually give you, and
- * the sharp edge on each.
- *
- * <ol>
- *   <li><b>Eight byte lanes per memory access</b>, via {@link MethodHandles#byteArrayViewVarHandle}.
- *       Every SWAR routine is checked against a scalar reference at <em>every</em> length from 0 to
- *       40, because the bug in this style of code is never in the wide loop — it is in the tail, and
- *       a test that only uses multiples of 8 never sees it.</li>
- *   <li><b>Per-element atomics on a plain array</b>, via
- *       {@link MethodHandles#arrayElementVarHandle}. Atomic per lane, and <em>not</em> atomic across
- *       lanes: the last two tests measure exactly that difference, one asserting the lock-free
- *       version tears and the other that the locked version never does.</li>
- * </ol>
- *
- * <p>The tests build their own {@code VarHandle}s rather than borrowing the class's, so that the
- * access-mode rules — alignment, which modes exist for which element type — are pinned down against
- * the JDK rather than against {@code VarHandleVector}'s use of it.
- */
 class VarHandleVectorTest {
 
     private static final VarHandle LONG_LANES =
@@ -48,16 +29,13 @@ class VarHandleVectorTest {
     private static final VarHandle LONG_ELEMENT = MethodHandles.arrayElementVarHandle(long[].class);
     private static final VarHandle DOUBLE_ELEMENT = MethodHandles.arrayElementVarHandle(double[].class);
 
-    // ---------- 1. SWAR, checked against the obvious scalar version ----------
-
-    /** Lengths either side of the 8-byte step, so every tail length is covered. */
     @ParameterizedTest(name = "length {0}")
     @ValueSource(ints = {0, 1, 2, 7, 8, 9, 15, 16, 17, 23, 31, 33, 40})
     void countMatchesTheScalarVersionAtEveryLength(int length) {
         Random rnd = new Random(length * 1_000L + 1);
         byte[] data = new byte[length];
         rnd.nextBytes(data);
-        for (int i = 0; i < length; i += 3) data[i] = 7;            // guarantee some hits
+        for (int i = 0; i < length; i += 3) data[i] = 7;
 
         for (byte value : new byte[]{0, 7, (byte) -1, (byte) 0x80, (byte) 0xFF}) {
             int expected = 0;
@@ -92,8 +70,8 @@ class VarHandleVectorTest {
         byte[] b = new byte[length];
         rnd.nextBytes(a);
         rnd.nextBytes(b);
-        if (length > 0) {                                           // force the carries that matter
-            a[0] = (byte) 0xFF; b[0] = 1;                           // wraps to 0
+        if (length > 0) {
+            a[0] = (byte) 0xFF; b[0] = 1;
             a[length - 1] = (byte) 0x80; b[length - 1] = (byte) 0x80;
         }
 
@@ -110,15 +88,10 @@ class VarHandleVectorTest {
 
     @Test
     void theTextbookZeroByteTrickOvercountsAndIsNotWhatIsUsed() {
-        // the reason VarHandleVector.zeroLanes is written the long way. The famous one-liner,
-        //     (v - ONES) & ~v & HIGHS
-        // is exact for "does v contain a zero lane" and wrong for "how many": a zero lane borrows
-        // from its neighbour and marks it too. This is the counter-example, and the class's own
-        // count() disagreeing with it is the proof that it does not use it.
         long ones = 0x0101010101010101L;
         long highs = 0x8080808080808080L;
         long lows = 0x7F7F7F7F7F7F7F7FL;
-        long v = 0xFFFFFFFFFFFF0100L;                               // lane 0 = 0x00, and nothing else
+        long v = 0xFFFFFFFFFFFF0100L;
         assertEquals(1, Long.bitCount((v - ones) & ~v & highs) - 1,
                 "the naive mask marks lane 1 as well, because lane 0 borrowed from it");
         assertEquals(1, Long.bitCount(~((((v & lows) + lows) | v) | lows)),
@@ -128,25 +101,20 @@ class VarHandleVectorTest {
         assertEquals(1, VarHandleVector.count(data, (byte) 0), "exactly one byte is zero");
     }
 
-    // ---------- the access-mode rules that make the above legal ----------
-
     @Test
     void aByteArrayViewIsPlainAccessOnlyAndThatIsWhatTheSwarLoopNeeds() {
         byte[] data = new byte[32];
         for (int i = 0; i < data.length; i++) data[i] = (byte) i;
 
-        // a read at any offset is fine — which is what lets the SWAR loop walk by 8 from index 0
         assertEquals(0x0706050403020100L, (long) LONG_LANES.get(data, 0));
         assertEquals(0x0807060504030201L, (long) LONG_LANES.get(data, 1), "unaligned, and still fine");
 
-        // and that is the whole menu: a byte[] view supports GET and SET and nothing else
         assertTrue(LONG_LANES.isAccessModeSupported(VarHandle.AccessMode.GET));
         assertTrue(LONG_LANES.isAccessModeSupported(VarHandle.AccessMode.SET));
         assertFalse(LONG_LANES.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
         assertFalse(LONG_LANES.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertThrows(UnsupportedOperationException.class, () -> LONG_LANES.getVolatile(data, 0));
 
-        // a ByteBuffer view has the atomic modes, but only over a direct buffer
         VarHandle bufferView = MethodHandles.byteBufferViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
         assertTrue(bufferView.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
         assertThrows(IllegalStateException.class,
@@ -155,7 +123,6 @@ class VarHandleVectorTest {
         assertThrows(IllegalStateException.class,
                 () -> bufferView.getVolatile(ByteBuffer.allocateDirect(32), 1), "misaligned");
 
-        // the index is a byte offset, and the last legal one leaves room for all eight lanes
         assertEquals(0x1F1E1D1C1B1A1918L, (long) LONG_LANES.get(data, 24));
         assertThrows(IndexOutOfBoundsException.class, () -> LONG_LANES.get(data, 25));
     }
@@ -168,8 +135,6 @@ class VarHandleVectorTest {
         assertEquals(8L, (long) LONG_ELEMENT.getAndBitwiseOr(longs, 0, 1L));
         assertEquals(9L, longs[0]);
 
-        // a double has the numeric modes too — the hand-written CAS loop in maxInto is not a
-        // workaround for their absence, it is there because no *maximum* mode exists for any type
         double[] doubles = {5.0};
         assertTrue(DOUBLE_ELEMENT.isAccessModeSupported(VarHandle.AccessMode.GET_AND_ADD));
         assertEquals(5.0, (double) DOUBLE_ELEMENT.getAndAdd(doubles, 0, 3.0));
@@ -183,9 +148,6 @@ class VarHandleVectorTest {
 
     @Test
     void casOnADoubleComparesBitsRatherThanValues() {
-        // the same asymmetry ArrayComparisonTest documents for Arrays.equals, arriving here as a
-        // liveness bug rather than a wrong answer: a CAS loop whose witness came from anywhere but
-        // a read of the element itself can spin forever against a value that "equals" it.
         double[] cell = {0.0};
         assertTrue(0.0 == -0.0, "the values are equal...");
         assertFalse(DOUBLE_ELEMENT.compareAndSet(cell, 0, -0.0, 1.0), "...and their bits are not");
@@ -206,7 +168,6 @@ class VarHandleVectorTest {
         for (int i = 0; i < expected.length; i++) expected[i] = Math.max(accumulator[i], candidate[i]);
 
         VarHandleVector.maxInto(accumulator, candidate);
-        // assertArrayEquals on doubles compares bit patterns, which is what distinguishes -0.0
         assertArrayEquals(expected, accumulator,
                 "Double.compare is what makes NaN win and -0.0 lose, exactly as Math.max does");
         assertEquals(0.0, accumulator[2]);
@@ -245,8 +206,6 @@ class VarHandleVectorTest {
         assertArrayEquals(expected, accumulator, "the largest value offered must survive every race");
     }
 
-    // ---------- 2. per-lane atomic is not per-vector atomic ----------
-
     @ParameterizedTest(name = "{0} threads")
     @ValueSource(ints = {2, 8, 24})
     @Timeout(60)
@@ -283,7 +242,7 @@ class VarHandleVectorTest {
         int lanes = 16;
         double[] accumulator = new double[lanes];
         double[] delta = new double[lanes];
-        Arrays.fill(delta, 0.5);                                   // exact in binary, so == is safe
+        Arrays.fill(delta, 0.5);
         CountDownLatch go = new CountDownLatch(1);
 
         Thread[] workers = new Thread[threads];
@@ -303,17 +262,10 @@ class VarHandleVectorTest {
         assertArrayEquals(expected, accumulator);
     }
 
-    /** What one torn-vector measurement produced. */
     private record Tearing(long reads, long inconsistent) {
         double rate() { return reads == 0 ? 0 : (double) inconsistent / reads; }
     }
 
-    /**
-     * Writers add the same value to every lane, so a vector written atomically always has all its
-     * lanes equal. A reader that sees two different values has caught a partial update.
-     *
-     * @param locked when true both writers and the reader go through a {@link VarHandleLock}
-     */
     private static Tearing tearing(boolean locked, int writers, int millis) throws InterruptedException {
         int lanes = 256;
         long[] accumulator = new long[lanes];

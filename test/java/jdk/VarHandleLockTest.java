@@ -21,29 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link VarHandleLock} — the hand-rolled lock — against the same contract
- * {@link ReentrantLockTest} holds the JDK's to.
- *
- * <p>Two of these tests are the ones that matter, and they are the ones a lock written from scratch
- * usually fails:
- *
- * <ul>
- *   <li>{@code mutualExclusionHolds…} — a deliberately non-atomic critical section, so a lock that
- *       ever admits two threads loses a count and says so.</li>
- *   <li>{@code noWakeupIsLostWhenWaitersGiveUp} — every acquisition mode at once, with an
- *       interrupter running, because the <b>cancellation</b> paths are where a lost wakeup hides: a
- *       thread that abandons its wait may be carrying the signal that was meant for it. A lost
- *       wakeup shows up as a worker still alive at the end, which is asserted directly rather than
- *       inferred from the totals — a parked worker contributes nothing to either side of them.</li>
- * </ul>
- */
 class VarHandleLockTest {
 
     private static final long JOIN_MILLIS = TimeUnit.SECONDS.toMillis(10);
     private static final long OBSERVE_MILLIS = 200;
-
-    // ---------- the contract it shares with ReentrantLock ----------
 
     @Test
     void holdsAreCountedAndEveryOneNeedsItsOwnUnlock() {
@@ -159,7 +140,6 @@ class VarHandleLockTest {
         assertTrue(lock.isHeldByCurrentThread());
         lock.unlock();
 
-        // and the lock still works afterwards — a cancelled waiter must not have eaten the signal
         assertTrue(lock.tryLock());
         lock.unlock();
     }
@@ -244,15 +224,13 @@ class VarHandleLockTest {
         assertEquals(0, lock.getQueueLength());
     }
 
-    // ---------- the two that matter ----------
-
     @ParameterizedTest(name = "{0} threads")
     @ValueSource(ints = {2, 8, 24})
     @Timeout(120)
     void mutualExclusionHoldsUnderContention(int threads) throws InterruptedException {
         VarHandleLock lock = new VarHandleLock();
         int perThread = 20_000;
-        long[] guarded = new long[1];                  // read, pause, write back: not atomic
+        long[] guarded = new long[1];
         AtomicLong overlaps = new AtomicLong();
         CountDownLatch go = new CountDownLatch(1);
 
@@ -289,9 +267,6 @@ class VarHandleLockTest {
     @ValueSource(booleans = {false, true})
     @Timeout(180)
     void noWakeupIsLostWhenWaitersGiveUp(boolean fair) throws InterruptedException {
-        // every acquisition mode mixed together, with an interrupter running, so that waiters are
-        // constantly abandoning their place in the queue. The count is the oracle for exclusion;
-        // "every worker finished" is the oracle for the wakeups.
         VarHandleLock lock = new VarHandleLock(fair);
         int threads = 12;
         int rounds = 4_000;
@@ -314,18 +289,18 @@ class VarHandleLockTest {
                     try {
                         switch (rnd.nextInt(4)) {
                             case 0 -> {
-                                lock.lock();                                   // uninterruptible
+                                lock.lock();
                                 held = true;
                             }
-                            case 1 -> held = lock.tryLock();                   // may simply fail
+                            case 1 -> held = lock.tryLock();
                             case 2 -> held = lock.tryLock(rnd.nextInt(2), TimeUnit.MILLISECONDS);
                             default -> {
-                                lock.lockInterruptibly();                      // may be cancelled
+                                lock.lockInterruptibly();
                                 held = true;
                             }
                         }
                     } catch (InterruptedException e) {
-                        Thread.interrupted();                                  // a miss, and carry on
+                        Thread.interrupted();
                     }
                     if (held) {
                         long seen = guarded[0];
@@ -343,9 +318,6 @@ class VarHandleLockTest {
         Thread interrupter = new Thread(() -> {
             Random rnd = new Random(99);
             if (!awaitQuietly(go)) return;
-            // and not one moment sooner: an interrupt delivered while a worker is still parked on
-            // the start line takes it out of the run before it has competed for the lock even once,
-            // which empties the measurement instead of stressing it
             if (!awaitQuietly(pastTheStartLine)) return;
             while (!stop.get()) {
                 workers[rnd.nextInt(threads)].interrupt();

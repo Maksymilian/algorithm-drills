@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="Floor against time for one car under FIFO and under LOOK">
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --lit:#52514e; --cell:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --lit:#c3c2b7; --cell:#2c2c2a; }
+  }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; fill: var(--ink2); }
+  .title { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .head { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .note { fill: var(--ink2); }
+  .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  .leader { stroke: var(--muted); stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .bg { fill: var(--surface); }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .axis { stroke: var(--axis); stroke-width: 1; }
+  .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .s1 { stroke: var(--s1); } .s2 { stroke: var(--s2); } .s3 { stroke: var(--s3); } .s4 { stroke: var(--s4); }
+  .f1 { fill: var(--s1); } .f2 { fill: var(--s2); } .f3 { fill: var(--s3); } .f4 { fill: var(--s4); }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  .wait { stroke: var(--ink2); stroke-width: 2; stroke-linecap: round; }
+  .call { fill: var(--surface); stroke: var(--ink2); stroke-width: 2; }
+  .cell { fill: var(--cell); }
+  .on { fill: var(--lit); }
+  .shaft { fill: none; stroke: var(--axis); stroke-width: 1; }
+</style>
+<rect class="bg" width="960" height="520" rx="8"/>
+<text x="24.0" y="34.0" class="title" text-anchor="start">One car, the same four people: in the order asked, or in the order passed</text>
+<text x="24.0" y="56.0" class="note" text-anchor="start">Three get in on the ground floor for 12, 5 and 9, in that order; at 10 s someone on 7 calls the car to go down to 1.</text>
+<text x="64.0" y="106.0" class="head" text-anchor="start">FIFO: the oldest request first</text>
+<text x="64.0" y="124.0" class="note" text-anchor="start">stops 0 → 12 → 5 → 9 → 7 → 1</text>
+<line class="grid" x1="64" x2="444" y1="440.0" y2="440.0"/>
+<text x="56.0" y="444.0" class="tick" text-anchor="end">0</text>
+<line class="grid" x1="64" x2="444" y1="361.1" y2="361.1"/>
+<text x="56.0" y="365.1" class="tick" text-anchor="end">5</text>
+<line class="grid" x1="64" x2="444" y1="282.1" y2="282.1"/>
+<text x="56.0" y="286.1" class="tick" text-anchor="end">10</text>
+<line class="grid" x1="64" x2="444" y1="203.2" y2="203.2"/>
+<text x="56.0" y="207.2" class="tick" text-anchor="end">15</text>
+<line class="grid" x1="64" x2="444" y1="140.0" y2="140.0"/>
+<text x="56.0" y="144.0" class="tick" text-anchor="end">19</text>
+<text x="64.0" y="458.0" class="tick" text-anchor="middle">0</text>
+<text x="140.0" y="458.0" class="tick" text-anchor="middle">20 s</text>
+<text x="216.0" y="458.0" class="tick" text-anchor="middle">40 s</text>
+<text x="292.0" y="458.0" class="tick" text-anchor="middle">60 s</text>
+<text x="368.0" y="458.0" class="tick" text-anchor="middle">80 s</text>
+<text x="444.0" y="458.0" class="tick" text-anchor="middle">100 s</text>
+<line class="axis" x1="64" x2="444" y1="440" y2="440"/>
+<text x="30" y="290.0" class="tick" text-anchor="middle" transform="rotate(-90 30 290.0)">floor</text>
+<polyline class="line s1" points="64.0,440.0 67.8,440.0 71.6,440.0 75.4,440.0 79.2,440.0 83.0,440.0 86.8,440.0 90.6,440.0 94.4,440.0 98.2,432.1 102.0,424.2 105.8,416.3 109.6,408.4 113.4,400.5 117.2,392.6 121.0,384.7 124.8,376.8 128.6,368.9 132.4,361.1 136.2,353.2 140.0,345.3 143.8,337.4 147.6,329.5 151.4,321.6 155.2,313.7 159.0,305.8 162.8,297.9 166.6,290.0 170.4,282.1 174.2,274.2 178.0,266.3 181.8,258.4 185.6,250.5 189.4,250.5 193.2,250.5 197.0,250.5 200.8,250.5 204.6,250.5 208.4,250.5 212.2,258.4 216.0,266.3 219.8,274.2 223.6,282.1 227.4,290.0 231.2,297.9 235.0,305.8 238.8,313.7 242.6,321.6 246.4,329.5 250.2,337.4 254.0,345.3 257.8,353.2 261.6,361.1 265.4,361.1 269.2,361.1 273.0,361.1 276.8,361.1 280.6,361.1 284.4,361.1 288.2,353.2 292.0,345.3 295.8,337.4 299.6,329.5 303.4,321.6 307.2,313.7 311.0,305.8 314.8,297.9 318.6,297.9 322.4,297.9 326.2,297.9 330.0,297.9 333.8,297.9 337.6,297.9 341.4,305.8 345.2,313.7 349.0,321.6 352.8,329.5 356.6,329.5 360.4,329.5 364.2,329.5 368.0,329.5 371.8,329.5 375.6,329.5 379.4,337.4 383.2,345.3 387.0,353.2 390.8,361.1 394.6,368.9 398.4,376.8 402.2,384.7 406.0,392.6 409.8,400.5 413.6,408.4 417.4,416.3 421.2,424.2"/>
+<circle class="dot f1" cx="64.0" cy="440.0" r="4.5"/>
+<circle class="dot f1" cx="185.6" cy="250.5" r="4.5"/>
+<circle class="dot f1" cx="261.6" cy="361.1" r="4.5"/>
+<circle class="dot f1" cx="314.8" cy="297.9" r="4.5"/>
+<circle class="dot f1" cx="352.8" cy="329.5" r="4.5"/>
+<circle class="dot f1" cx="421.2" cy="424.2" r="4.5"/>
+<line class="wait" x1="102.0" x2="352.8" y1="329.5" y2="329.5"/>
+<circle class="call" cx="102.0" cy="329.5" r="4.5"/>
+<text x="227.4" y="319.5" class="note halo" text-anchor="middle">call ▼ at 7: waits 66 s</text>
+<text x="64.0" y="486.0" class="note" text-anchor="start">everyone delivered at 94 s; journeys add up to 234 s</text>
+<text x="534.0" y="106.0" class="head" text-anchor="start">LOOK: everything on the way</text>
+<text x="534.0" y="124.0" class="note" text-anchor="start">stops 0 → 5 → 9 → 12 → 7 → 1</text>
+<line class="grid" x1="534" x2="914" y1="440.0" y2="440.0"/>
+<text x="526.0" y="444.0" class="tick" text-anchor="end">0</text>
+<line class="grid" x1="534" x2="914" y1="361.1" y2="361.1"/>
+<text x="526.0" y="365.1" class="tick" text-anchor="end">5</text>
+<line class="grid" x1="534" x2="914" y1="282.1" y2="282.1"/>
+<text x="526.0" y="286.1" class="tick" text-anchor="end">10</text>
+<line class="grid" x1="534" x2="914" y1="203.2" y2="203.2"/>
+<text x="526.0" y="207.2" class="tick" text-anchor="end">15</text>
+<line class="grid" x1="534" x2="914" y1="140.0" y2="140.0"/>
+<text x="526.0" y="144.0" class="tick" text-anchor="end">19</text>
+<text x="534.0" y="458.0" class="tick" text-anchor="middle">0</text>
+<text x="610.0" y="458.0" class="tick" text-anchor="middle">20 s</text>
+<text x="686.0" y="458.0" class="tick" text-anchor="middle">40 s</text>
+<text x="762.0" y="458.0" class="tick" text-anchor="middle">60 s</text>
+<text x="838.0" y="458.0" class="tick" text-anchor="middle">80 s</text>
+<text x="914.0" y="458.0" class="tick" text-anchor="middle">100 s</text>
+<line class="axis" x1="534" x2="914" y1="440" y2="440"/>
+<text x="500" y="290.0" class="tick" text-anchor="middle" transform="rotate(-90 500 290.0)">floor</text>
+<polyline class="line s1" points="534.0,440.0 537.8,440.0 541.6,440.0 545.4,440.0 549.2,440.0 553.0,440.0 556.8,440.0 560.6,440.0 564.4,440.0 568.2,432.1 572.0,424.2 575.8,416.3 579.6,408.4 583.4,400.5 587.2,392.6 591.0,384.7 594.8,376.8 598.6,368.9 602.4,361.1 606.2,361.1 610.0,361.1 613.8,361.1 617.6,361.1 621.4,361.1 625.2,361.1 629.0,353.2 632.8,345.3 636.6,337.4 640.4,329.5 644.2,321.6 648.0,313.7 651.8,305.8 655.6,297.9 659.4,297.9 663.2,297.9 667.0,297.9 670.8,297.9 674.6,297.9 678.4,297.9 682.2,290.0 686.0,282.1 689.8,274.2 693.6,266.3 697.4,258.4 701.2,250.5 705.0,250.5 708.8,250.5 712.6,250.5 716.4,250.5 720.2,250.5 724.0,250.5 727.8,258.4 731.6,266.3 735.4,274.2 739.2,282.1 743.0,290.0 746.8,297.9 750.6,305.8 754.4,313.7 758.2,321.6 762.0,329.5 765.8,329.5 769.6,329.5 773.4,329.5 777.2,329.5 781.0,329.5 784.8,329.5 788.6,337.4 792.4,345.3 796.2,353.2 800.0,361.1 803.8,368.9 807.6,376.8 811.4,384.7 815.2,392.6 819.0,400.5 822.8,408.4 826.6,416.3 830.4,424.2"/>
+<circle class="dot f1" cx="534.0" cy="440.0" r="4.5"/>
+<circle class="dot f1" cx="602.4" cy="361.1" r="4.5"/>
+<circle class="dot f1" cx="655.6" cy="297.9" r="4.5"/>
+<circle class="dot f1" cx="701.2" cy="250.5" r="4.5"/>
+<circle class="dot f1" cx="762.0" cy="329.5" r="4.5"/>
+<circle class="dot f1" cx="830.4" cy="424.2" r="4.5"/>
+<line class="wait" x1="572.0" x2="762.0" y1="329.5" y2="329.5"/>
+<circle class="call" cx="572.0" cy="329.5" r="4.5"/>
+<text x="667.0" y="319.5" class="note halo" text-anchor="middle">call ▼ at 7: waits 50 s</text>
+<text x="534.0" y="486.0" class="note" text-anchor="start">everyone delivered at 78 s; journeys add up to 162 s</text>
+</svg>

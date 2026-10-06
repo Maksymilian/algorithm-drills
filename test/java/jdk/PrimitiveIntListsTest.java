@@ -22,22 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * A plain {@code int[]} against the two growable {@code int} lists most often reached for instead of
- * {@code ArrayList<Integer>}: fastutil's {@code IntArrayList} and Eclipse Collections'
- * {@code IntArrayList}.
- *
- * <p>All three keep the values in one {@code int[]}, so none of them boxes. Where they differ is
- * everything around that array: whether you can get at it, whether wrapping one copies it, what
- * {@code equals} means, how removal by index and by value are told apart, and what type a sum comes
- * back as. The two libraries share a class name, so fastutil's is always written out in full here.
- *
- * <p>Nothing here measures speed, which is not something to assert. {@link PrimitiveIntListsBenchmark}
- * measures it, and {@code docs/jdk/primitive-int-lists.md} records the results.
- */
 class PrimitiveIntListsTest {
-
-    // ---------- the same values, three containers ----------
 
     @Test
     void allThreeHoldTheSameValuesAndReadThemBackUnboxed() {
@@ -45,7 +30,6 @@ class PrimitiveIntListsTest {
         it.unimi.dsi.fastutil.ints.IntArrayList fast = it.unimi.dsi.fastutil.ints.IntArrayList.of(3, 1, 2);
         MutableIntList eclipse = IntArrayList.newListWith(3, 1, 2);
 
-        // the typed accessors return int, not Integer: there is no object to compare by reference
         for (int i = 0; i < array.length; i++) {
             assertEquals(array[i], fast.getInt(i));
             assertEquals(array[i], eclipse.get(i));
@@ -56,23 +40,17 @@ class PrimitiveIntListsTest {
 
     @Test
     void anArrayListOfIntegerHoldsObjectsAndTheirIdentityLeaks() {
-        // Integer.valueOf caches only -128..127 by default, so 1000 is boxed into a fresh object each time
         List<Integer> boxed = new ArrayList<>(List.of(1000));
         boxed.add(1000);
         assertNotSame(boxed.get(0), boxed.get(1), "two boxes of the same value");
         assertTrue(boxed.get(0).equals(boxed.get(1)));
 
-        // the primitive lists have nothing to compare but the value
         it.unimi.dsi.fastutil.ints.IntArrayList fast = it.unimi.dsi.fastutil.ints.IntArrayList.of(1000, 1000);
         assertTrue(fast.getInt(0) == fast.getInt(1));
         MutableIntList eclipse = IntArrayList.newListWith(1000, 1000);
         assertTrue(eclipse.get(0) == eclipse.get(1));
     }
 
-    /**
-     * fastutil implements {@code List<Integer>} as well, so its inherited {@code get} still boxes. The
-     * primitive path is {@code getInt}; {@code get} is deprecated precisely to make the boxing visible.
-     */
     @Test
     @SuppressWarnings("deprecation")
     void fastutilStillOffersTheBoxedViewEclipseDoesNot() {
@@ -83,8 +61,6 @@ class PrimitiveIntListsTest {
         assertFalse(((Object) IntArrayList.newListWith(1000)) instanceof List<?>,
                 "Eclipse primitive lists are not, so there is no boxed get to call by accident");
     }
-
-    // ---------- growth ----------
 
     @Test
     void anArrayHasAFixedLengthAndGrowsOnlyByCopying() {
@@ -112,7 +88,6 @@ class PrimitiveIntListsTest {
         assertEquals(999, eclipse.get(999));
     }
 
-    /** fastutil shows you the capacity; the backing array is usually longer than the list. */
     @Test
     void fastutilExposesItsBackingArrayIncludingTheUnusedTail() {
         it.unimi.dsi.fastutil.ints.IntArrayList fast = new it.unimi.dsi.fastutil.ints.IntArrayList(16);
@@ -128,8 +103,6 @@ class PrimitiveIntListsTest {
         fast.trim();
         assertEquals(1, fast.elements().length, "trim() shrinks the array to the size");
     }
-
-    // ---------- wrapping an existing array ----------
 
     @Test
     void fastutilWrapSharesTheArrayUntilItHasToGrow() {
@@ -148,7 +121,6 @@ class PrimitiveIntListsTest {
         assertEquals(3, array[2], "from here on the two are independent");
     }
 
-    /** In fastutil sharing is opt-in: {@code wrap} shares, the constructor copies. */
     @Test
     void fastutilsConstructorCopies() {
         int[] array = {1, 2, 3};
@@ -157,11 +129,6 @@ class PrimitiveIntListsTest {
         assertEquals(1, fast.getInt(0), "new IntArrayList(int[]) copies");
     }
 
-    /**
-     * In Eclipse sharing is the default: every varargs factory for a mutable list keeps the array
-     * it was handed, which is fastutil's {@code wrap} under a name that does not say so. Passing
-     * literals, the usual case, makes this invisible; passing an array you still hold does not.
-     */
     @Test
     void eclipsesVarargsFactoriesAdoptTheArrayTheyAreGiven() {
         int[] array = {1, 2, 3};
@@ -174,7 +141,6 @@ class PrimitiveIntListsTest {
         assertEquals(10, constructed.get(0), "new IntArrayList(int...) does not copy");
         assertEquals(10, viaFactory.get(0), "IntLists.mutable.with(int...) does not copy");
 
-        // as with wrap, the link breaks silently the first time the list outgrows the array
         newListWith.add(4);
         array[1] = 20;
         assertEquals(2, newListWith.get(1), "add reallocated, so the list no longer sees the array");
@@ -203,8 +169,6 @@ class PrimitiveIntListsTest {
         assertEquals(1, eclipse.get(0));
     }
 
-    // ---------- equality ----------
-
     @Test
     void arraysCompareByIdentityAndTheListsByContents() {
         int[] a = {1, 2, 3};
@@ -216,11 +180,6 @@ class PrimitiveIntListsTest {
         assertEquals(IntArrayList.newListWith(1, 2, 3), IntArrayList.newListWith(1, 2, 3));
     }
 
-    /**
-     * Because fastutil's list is a {@code List<Integer>}, it obeys the {@code List} contract: equal to
-     * any list of the same elements, with the same hash code. Eclipse's {@code IntList} is its own
-     * hierarchy and is never equal to a {@code java.util.List}.
-     */
     @Test
     void onlyFastutilIsEqualToAnArrayListOfTheSameValues() {
         List<Integer> boxed = List.of(1, 2, 3);
@@ -239,18 +198,10 @@ class PrimitiveIntListsTest {
 
     @Test
     void theTwoLibrariesAreNeverEqualToEachOther() {
-        // not a bug in either: neither knows the other's type
         assertNotEquals(it.unimi.dsi.fastutil.ints.IntArrayList.of(1, 2, 3), IntArrayList.newListWith(1, 2, 3));
         assertNotEquals(IntArrayList.newListWith(1, 2, 3), it.unimi.dsi.fastutil.ints.IntArrayList.of(1, 2, 3));
     }
 
-    // ---------- removal: by index or by value? ----------
-
-    /**
-     * {@code List<Integer>.remove(1)} removes at index 1, because {@code remove(int)} beats
-     * {@code remove(Object)} in overload resolution. Both primitive lists rename one of the two so a
-     * call can only mean one thing.
-     */
     @Test
     void removalByIndexAndByValueHaveDifferentNames() {
         List<Integer> boxed = new ArrayList<>(List.of(5, 1, 7));
@@ -272,8 +223,6 @@ class PrimitiveIntListsTest {
         assertEquals(IntArrayList.newListWith(5, 1), eclipse, "remove is by value");
     }
 
-    // ---------- bounds ----------
-
     @Test
     void readingPastTheSizeFailsEvenWhenTheArrayIsLongerThanThat() {
         it.unimi.dsi.fastutil.ints.IntArrayList fast = new it.unimi.dsi.fastutil.ints.IntArrayList(16);
@@ -289,9 +238,6 @@ class PrimitiveIntListsTest {
         assertEquals(0, array[1], "an array has no size apart from its length: unused slots read as 0");
     }
 
-    // ---------- aggregates ----------
-
-    /** {@code IntStream.sum()} returns an {@code int} and wraps; Eclipse's {@code sum()} returns a {@code long}. */
     @Test
     void sumOverflowsInAnIntStreamButNotInEclipse() {
         int[] array = {Integer.MAX_VALUE, 1};
@@ -317,12 +263,6 @@ class PrimitiveIntListsTest {
         assertEquals(IntArrayList.newListWith(4, 2), eclipse.select(v -> v % 2 == 0), "select stays primitive");
     }
 
-    // ---------- sorting ----------
-
-    /**
-     * {@code Arrays.sort(int[])} sorts ascending and takes no comparator; descending means boxing or
-     * reversing afterwards. fastutil sorts an {@code int[]} with a primitive comparator.
-     */
     @Test
     void onlyFastutilSortsPrimitivesWithAComparator() {
         int[] array = {3, 1, 2};
@@ -357,8 +297,6 @@ class PrimitiveIntListsTest {
         }
     }
 
-    // ---------- read-only ----------
-
     @Test
     void readOnlyIsAViewInFastutilAndACopyInEclipse() {
         it.unimi.dsi.fastutil.ints.IntArrayList fast = it.unimi.dsi.fastutil.ints.IntArrayList.of(1, 2);
@@ -375,7 +313,6 @@ class PrimitiveIntListsTest {
         assertEquals(2, frozen.size());
 
         int[] array = {1, 2};
-        // the closest an array gets is a defensive copy, or an IntBuffer view; it has no read-only mode
         assertNotSame(array, array.clone());
     }
 }

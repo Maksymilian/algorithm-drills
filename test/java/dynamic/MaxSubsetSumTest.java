@@ -21,10 +21,10 @@ class MaxSubsetSumTest {
 
     static Stream<Arguments> knownCases() {
         return Stream.of(
-                Arguments.of("sample 0", new int[]{3, 7, 4, 6, 5}, 13),          // 7 + 6
-                Arguments.of("sample 1", new int[]{2, 1, 5, 8, 4}, 11),          // 2 + 5 + 4
-                Arguments.of("sample 2", new int[]{3, 5, -7, 8, 10}, 15),        // 5 + 10
-                Arguments.of("problem example", new int[]{-2, 1, 3, -4, 5}, 8),  // 3 + 5
+                Arguments.of("sample 0", new int[]{3, 7, 4, 6, 5}, 13),
+                Arguments.of("sample 1", new int[]{2, 1, 5, 8, 4}, 11),
+                Arguments.of("sample 2", new int[]{3, 5, -7, 8, 10}, 15),
+                Arguments.of("problem example", new int[]{-2, 1, 3, -4, 5}, 8),
                 Arguments.of("empty array", new int[]{}, 0),
                 Arguments.of("single positive", new int[]{7}, 7),
                 Arguments.of("single negative", new int[]{-7}, 0),
@@ -67,19 +67,12 @@ class MaxSubsetSumTest {
         for (int trial = 0; trial < 2_000; trial++) {
             int[] arr = new int[random.nextInt(13)];
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = random.nextInt(41) - 20;   // -20..20, so negatives are common
+                arr[i] = random.nextInt(41) - 20;
             }
             assertEquals(bruteForce(arr), maxSubsetSumAsLong(arr), Arrays.toString(arr));
         }
     }
 
-    // --- very large sets -------------------------------------------------------------------------
-
-    /**
-     * 10 million random elements, cross-checked against the O(n)-memory form of the same
-     * recurrence. Collapsing the table to two variables is the one step that could plausibly break
-     * at scale, so it is worth checking against a table that is actually kept.
-     */
     @Test
     void matchesTableDpOnTenMillionRandomElements() {
         int[] arr = new Random(20260908L).ints(10_000_000, -10_000, 10_001).toArray();
@@ -88,7 +81,6 @@ class MaxSubsetSumTest {
                 assertEquals(tableDp(arr), maxSubsetSumAsLong(arr)));
     }
 
-    /** 10 million alternating peaks and troughs: every peak is pickable, every trough is not. */
     @Test
     void solvesTenMillionAlternatingElements() {
         int n = 10_000_000;
@@ -97,11 +89,6 @@ class MaxSubsetSumTest {
         assertEquals((n / 2) * 10_000L, maxSubsetSumAsLong(arr));
     }
 
-    /**
-     * 200 million elements folded straight off a stream. The set is roughly 800 MB of ints, far
-     * more than this JVM's heap allows (see the surefire argLine in pom.xml), so it can only pass
-     * if the dynamic program really does keep O(1) state and never materializes the input.
-     */
     @Test
     void foldsTwoHundredMillionElementsFromAStream() {
         int n = 200_000_000;
@@ -109,7 +96,7 @@ class MaxSubsetSumTest {
         long sum = assertTimeoutPreemptively(Duration.ofSeconds(30), () ->
                 maxSubsetSumAsLong(IntStream.range(0, n).map(i -> 10_000)));
 
-        assertEquals((n / 2) * 10_000L, sum);   // every other element, so 10^12
+        assertEquals((n / 2) * 10_000L, sum);
     }
 
     @Test
@@ -118,8 +105,6 @@ class MaxSubsetSumTest {
 
         assertEquals(maxSubsetSumAsLong(arr), maxSubsetSumAsLong(Arrays.stream(arr).parallel()));
     }
-
-    // --- the int contract at its limits ----------------------------------------------------------
 
     @Test
     void intOverloadAcceptsAnAnswerOfExactlyIntegerMaxValue() {
@@ -140,15 +125,12 @@ class MaxSubsetSumTest {
         int[] arr = new int[1_000_000];
         Arrays.fill(arr, 10_000);
 
-        assertEquals(500_000L * 10_000, maxSubsetSumAsLong(arr));   // 5 * 10^9
+        assertEquals(500_000L * 10_000, maxSubsetSumAsLong(arr));
         assertThrows(ArithmeticException.class, () -> maxSubsetSum(arr));
     }
 
-    // --- reference implementations ---------------------------------------------------------------
-
-    /** The same recurrence with the whole {@code best} table kept: O(n) time, O(n) memory. */
     private static long tableDp(int[] arr) {
-        long[] best = new long[arr.length + 2];   // best[i + 2] is the answer for arr[0..i]
+        long[] best = new long[arr.length + 2];
 
         for (int i = 0; i < arr.length; i++) {
             best[i + 2] = Math.max(best[i + 1], best[i] + arr[i]);
@@ -157,9 +139,8 @@ class MaxSubsetSumTest {
         return best[arr.length + 1];
     }
 
-    /** Checks every subset via a bitmask, rejecting the ones with adjacent elements. */
     private static long bruteForce(int[] arr) {
-        long best = 0;   // the empty subset
+        long best = 0;
 
         for (int mask = 1; mask < (1 << arr.length); mask++) {
             if ((mask & (mask << 1)) != 0) continue;

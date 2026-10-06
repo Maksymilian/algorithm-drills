@@ -44,7 +44,6 @@ class MaxMinTest {
                 Arguments.of("already ascending", 3, new int[]{1, 2, 3, 40, 50, 60}, 2L),
                 Arguments.of("already descending", 3, new int[]{60, 50, 40, 3, 2, 1}, 2L),
 
-                // The tight window is not at either end, and not where the smallest values are.
                 Arguments.of("best window in the middle", 3, new int[]{1, 500, 501, 502, 900, 2000}, 2L),
                 Arguments.of("the k smallest are the wrong answer", 3, new int[]{0, 10, 20, 30, 31, 32}, 2L),
 
@@ -60,8 +59,6 @@ class MaxMinTest {
     void findsTheMinimumUnfairness(String name, int k, int[] arr, long expected) {
         assertEveryMethodReturns(expected, k, arr, name);
     }
-
-    // --- what each method promises about the array afterwards ------------------------------------
 
     @Test
     void inPlaceLeavesTheArraySorted() {
@@ -86,7 +83,6 @@ class MaxMinTest {
         assertEquals(original, Arrays.toString(arr), "fairestSelection");
     }
 
-    /** {@code k} is validated before the sort, so a rejected call cannot reorder the caller's data. */
     @Test
     void inPlaceRejectsBadKWithoutTouchingTheArray() {
         int[] arr = {3, 1, 2};
@@ -95,8 +91,6 @@ class MaxMinTest {
         assertThrows(IllegalArgumentException.class, () -> maxMinInPlace(0, arr));
         assertArrayEquals(new int[]{3, 1, 2}, arr);
     }
-
-    // --- the witness ------------------------------------------------------------------------------
 
     @Test
     void theSelectionIsTheAnswerItReports() {
@@ -119,10 +113,8 @@ class MaxMinTest {
 
     @Test
     void theSelectionIsTheEarliestWindowOnATie() {
-        assertArrayEquals(new int[]{1, 2}, fairestSelection(2, new int[]{5, 2, 6, 1}));   // 1,2 and 5,6 both spread 1
+        assertArrayEquals(new int[]{1, 2}, fairestSelection(2, new int[]{5, 2, 6, 1}));
     }
-
-    // --- the input contract ------------------------------------------------------------------------
 
     @Test
     void rejectsNullInput() {
@@ -141,7 +133,7 @@ class MaxMinTest {
         for (int k : new int[]{0, -1, Integer.MIN_VALUE, 4, 100, Integer.MAX_VALUE}) {
             assertRejected(k, arr, "k=" + k);
         }
-        assertRejected(1, new int[]{}, "empty array");      // nothing to select from at all
+        assertRejected(1, new int[]{}, "empty array");
     }
 
     @Test
@@ -152,11 +144,6 @@ class MaxMinTest {
         assertThrows(NullPointerException.class, () -> maxMin(2, withNull));
     }
 
-    /**
-     * The spread is computed in {@code long} throughout. In {@code int} arithmetic
-     * {@code MAX_VALUE - (-1)} wraps to {@code MIN_VALUE}, which would look like the narrowest
-     * window on offer and hand back a negative unfairness.
-     */
     @Test
     void doesNotWrapOnSpreadsWiderThanAnInt() {
         int[] extremes = {Integer.MIN_VALUE, Integer.MAX_VALUE};
@@ -167,23 +154,10 @@ class MaxMinTest {
         assertThrows(ArithmeticException.class, () -> maxMin(2, extremes));
 
         int[] withMiddle = {Integer.MAX_VALUE, Integer.MIN_VALUE, -1};
-        assertEquals(2147483647L, maxMinAsLong(2, withMiddle));      // the wrapping pair is not chosen
+        assertEquals(2147483647L, maxMinAsLong(2, withMiddle));
         assertEquals(2147483647, maxMin(2, withMiddle));
     }
 
-    // --- cross-checks against independent oracles ---------------------------------------------------
-
-    /**
-     * The load-bearing test. Every method here assumes the answer lies in a window of {@code k}
-     * <i>consecutive</i> sorted elements; this one never assumes it, enumerating all
-     * {@code C(n, k)} selections directly for every array of up to ten elements and every
-     * {@code k}. A method that scanned windows correctly but rested on a false exchange argument
-     * would pass every other test in this file.
-     * <p>
-     * The values are drawn from a deliberately narrow range in some trials, so duplicates and ties
-     * are common, and from the extremes in others, so the sign handling and the {@code long}
-     * subtraction are exercised too.
-     */
     @Test
     void matchesBruteForceOverEverySelectionUpToTenElements() {
         Random random = new Random(20260914L);
@@ -200,7 +174,6 @@ class MaxMinTest {
         }
     }
 
-    /** Larger arrays, against the definition applied to an independently sorted copy. */
     @Test
     void matchesAHandScanOfTheSortedArrayOnRandomInput() {
         Random random = new Random(5L);
@@ -214,11 +187,6 @@ class MaxMinTest {
         }
     }
 
-    /**
-     * The radix sort's own hazard: the sign bit is the top bit of the top byte, so a pass that
-     * treats that byte as unsigned files every negative value after every positive one. Agreeing
-     * with the comparison sort for <i>every</i> k pins the whole ordering, not just its extremes.
-     */
     @Test
     void radixSortOrdersAcrossTheSignBit() {
         int[] arr = {Integer.MAX_VALUE, -1, 0, Integer.MIN_VALUE, 1, -2,
@@ -229,7 +197,6 @@ class MaxMinTest {
         }
     }
 
-    /** Values that share every byte but one, so exactly one radix pass may reorder anything. */
     @Test
     void radixSortSkipsUniformPassesWithoutSkippingWork() {
         Random random = new Random(13L);
@@ -245,12 +212,6 @@ class MaxMinTest {
         }
     }
 
-    // --- large arrays -------------------------------------------------------------------------------
-
-    /**
-     * 10 million elements, shuffled {@code 0 .. n-1}, so the sorted array is the identity and the
-     * answer is {@code k - 1} for every {@code k} - known without sorting anything.
-     */
     @Test
     void selectsFromTenMillionElements() {
         int n = 10_000_000;
@@ -266,7 +227,6 @@ class MaxMinTest {
         });
     }
 
-    /** The same size drawn from a narrow range, where the answer is 0 and ties are everywhere. */
     @Test
     void selectsFromTenMillionElementsWithHeavyDuplication() {
         int n = 10_000_000;
@@ -274,13 +234,11 @@ class MaxMinTest {
         Arrays.setAll(arr, i -> i % 1000);
 
         assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
-            assertEquals(0L, maxMinAsLong(10_000, arr));          // 10 000 copies of every value
+            assertEquals(0L, maxMinAsLong(10_000, arr));
             assertEquals(0L, maxMinByRadixSort(10_000, arr));
             assertEquals(999L, maxMinAsLong(n, arr));
         });
     }
-
-    // --- helpers --------------------------------------------------------------------------------------
 
     private static void assertEveryMethodReturns(long expected, int k, int[] arr, String where) {
         assertEquals(expected, maxMinAsLong(k, arr), "maxMinAsLong: " + where);
@@ -323,9 +281,6 @@ class MaxMinTest {
         }
     }
 
-    // --- reference implementations ----------------------------------------------------------------------
-
-    /** The definition, over all {@code C(n, k)} selections. Exponential, so {@code n <= 10} only. */
     private static long bruteForceMinimumUnfairness(int k, int[] arr) {
         int n = arr.length;
         long best = Long.MAX_VALUE;
@@ -346,7 +301,6 @@ class MaxMinTest {
         return best;
     }
 
-    /** The window scan written out again over an independently sorted copy. */
     private static long scanSortedCopy(int k, int[] arr) {
         int[] sorted = sortedCopy(arr);
         long best = Long.MAX_VALUE;
@@ -357,14 +311,13 @@ class MaxMinTest {
         return best;
     }
 
-    /** A spread of value shapes: narrow ranges force duplicates, extremes force long arithmetic. */
     private static int[] assortedValues(int n, int trial, Random random) {
         return switch (trial % 4) {
-            case 0 -> random.ints(n, 0, 4).toArray();                       // duplicates everywhere
-            case 1 -> random.ints(n, -20, 21).toArray();                    // across zero
-            case 2 -> random.ints(n, 0, 1_000_000_001).toArray();           // the problem's own range
+            case 0 -> random.ints(n, 0, 4).toArray();
+            case 1 -> random.ints(n, -20, 21).toArray();
+            case 2 -> random.ints(n, 0, 1_000_000_001).toArray();
             default -> random.ints(n)
-                    .map(v -> switch (Math.floorMod(v, 4)) {                // the corners of int
+                    .map(v -> switch (Math.floorMod(v, 4)) {
                         case 0 -> Integer.MIN_VALUE;
                         case 1 -> Integer.MAX_VALUE;
                         case 2 -> 0;

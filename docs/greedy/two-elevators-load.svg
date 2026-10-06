@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" width="960" height="500" role="img" aria-label="Mean wait against arrivals per minute for the four strategies">
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --lit:#52514e; --cell:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --lit:#c3c2b7; --cell:#2c2c2a; }
+  }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; fill: var(--ink2); }
+  .title { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .head { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .note { fill: var(--ink2); }
+  .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  .leader { stroke: var(--muted); stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .bg { fill: var(--surface); }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .axis { stroke: var(--axis); stroke-width: 1; }
+  .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .s1 { stroke: var(--s1); } .s2 { stroke: var(--s2); } .s3 { stroke: var(--s3); } .s4 { stroke: var(--s4); }
+  .f1 { fill: var(--s1); } .f2 { fill: var(--s2); } .f3 { fill: var(--s3); } .f4 { fill: var(--s4); }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  .wait { stroke: var(--ink2); stroke-width: 2; stroke-linecap: round; }
+  .call { fill: var(--surface); stroke: var(--ink2); stroke-width: 2; }
+  .cell { fill: var(--cell); }
+  .on { fill: var(--lit); }
+  .shaft { fill: none; stroke: var(--axis); stroke-width: 1; }
+</style>
+<rect class="bg" width="960" height="500" rx="8"/>
+<text x="24.0" y="34.0" class="title" text-anchor="start">Mean wait as more people arrive: lunchtime traffic, two cars</text>
+<text x="24.0" y="56.0" class="note" text-anchor="start">Each point is the average of 20 simulated hours. The wait axis is logarithmic: each gridline is about three times the one below.</text>
+<line class="grid" x1="84" x2="724" y1="440.0" y2="440.0"/>
+<text x="76.0" y="444.0" class="tick" text-anchor="end">10 s</text>
+<line class="grid" x1="84" x2="724" y1="376.4" y2="376.4"/>
+<text x="76.0" y="380.4" class="tick" text-anchor="end">30 s</text>
+<line class="grid" x1="84" x2="724" y1="306.8" y2="306.8"/>
+<text x="76.0" y="310.8" class="tick" text-anchor="end">100 s</text>
+<line class="grid" x1="84" x2="724" y1="243.2" y2="243.2"/>
+<text x="76.0" y="247.2" class="tick" text-anchor="end">300 s</text>
+<line class="grid" x1="84" x2="724" y1="173.6" y2="173.6"/>
+<text x="76.0" y="177.6" class="tick" text-anchor="end">1 000 s</text>
+<line class="grid" x1="84" x2="724" y1="110.0" y2="110.0"/>
+<text x="76.0" y="114.0" class="tick" text-anchor="end">3 000 s</text>
+<text x="84.0" y="460.0" class="tick" text-anchor="middle">2</text>
+<text x="155.1" y="460.0" class="tick" text-anchor="middle">4</text>
+<text x="226.2" y="460.0" class="tick" text-anchor="middle">6</text>
+<text x="297.3" y="460.0" class="tick" text-anchor="middle">8</text>
+<text x="368.4" y="460.0" class="tick" text-anchor="middle">10</text>
+<text x="439.6" y="460.0" class="tick" text-anchor="middle">12</text>
+<text x="510.7" y="460.0" class="tick" text-anchor="middle">14</text>
+<text x="581.8" y="460.0" class="tick" text-anchor="middle">16</text>
+<text x="652.9" y="460.0" class="tick" text-anchor="middle">18</text>
+<text x="724.0" y="460.0" class="tick" text-anchor="middle">20</text>
+<line class="axis" x1="84" x2="724" y1="440" y2="440"/>
+<text x="404.0" y="482.0" class="tick" text-anchor="middle">people arriving per minute</text>
+<line class="line s1" x1="24" x2="44" y1="84" y2="84"/>
+<text x="50.0" y="88.0" class="note" text-anchor="start">FIFO + NEAREST</text>
+<line class="line s2" x1="196" x2="216" y1="84" y2="84"/>
+<text x="222.0" y="88.0" class="note" text-anchor="start">FIFO + ETA</text>
+<line class="line s3" x1="336" x2="356" y1="84" y2="84"/>
+<text x="362.0" y="88.0" class="note" text-anchor="start">LOOK + NEAREST</text>
+<line class="line s4" x1="508" x2="528" y1="84" y2="84"/>
+<text x="534.0" y="88.0" class="note" text-anchor="start">LOOK + ETA</text>
+<polyline class="line s1" points="84.0,384.9 155.1,342.6 226.2,301.3 297.3,253.2 368.4,210.9 439.6,183.6 510.7,163.3 581.8,147.4 652.9,135.1 724.0,124.6"/>
+<circle class="dot f1" cx="84.0" cy="384.9" r="4"/>
+<circle class="dot f1" cx="155.1" cy="342.6" r="4"/>
+<circle class="dot f1" cx="226.2" cy="301.3" r="4"/>
+<circle class="dot f1" cx="297.3" cy="253.2" r="4"/>
+<circle class="dot f1" cx="368.4" cy="210.9" r="4"/>
+<circle class="dot f1" cx="439.6" cy="183.6" r="4"/>
+<circle class="dot f1" cx="510.7" cy="163.3" r="4"/>
+<circle class="dot f1" cx="581.8" cy="147.4" r="4"/>
+<circle class="dot f1" cx="652.9" cy="135.1" r="4"/>
+<circle class="dot f1" cx="724.0" cy="124.6" r="4"/>
+<polyline class="line s2" points="84.0,410.0 155.1,356.8 226.2,307.1 297.3,260.6 368.4,214.6 439.6,185.1 510.7,163.4 581.8,148.1 652.9,135.8 724.0,125.3"/>
+<circle class="dot f2" cx="84.0" cy="410.0" r="4"/>
+<circle class="dot f2" cx="155.1" cy="356.8" r="4"/>
+<circle class="dot f2" cx="226.2" cy="307.1" r="4"/>
+<circle class="dot f2" cx="297.3" cy="260.6" r="4"/>
+<circle class="dot f2" cx="368.4" cy="214.6" r="4"/>
+<circle class="dot f2" cx="439.6" cy="185.1" r="4"/>
+<circle class="dot f2" cx="510.7" cy="163.4" r="4"/>
+<circle class="dot f2" cx="581.8" cy="148.1" r="4"/>
+<circle class="dot f2" cx="652.9" cy="135.8" r="4"/>
+<circle class="dot f2" cx="724.0" cy="125.3" r="4"/>
+<polyline class="line s3" points="84.0,398.5 155.1,372.2 226.2,353.0 297.3,338.8 368.4,318.1 439.6,278.8 510.7,236.7 581.8,198.7 652.9,180.4 724.0,163.4"/>
+<circle class="dot f3" cx="84.0" cy="398.5" r="4"/>
+<circle class="dot f3" cx="155.1" cy="372.2" r="4"/>
+<circle class="dot f3" cx="226.2" cy="353.0" r="4"/>
+<circle class="dot f3" cx="297.3" cy="338.8" r="4"/>
+<circle class="dot f3" cx="368.4" cy="318.1" r="4"/>
+<circle class="dot f3" cx="439.6" cy="278.8" r="4"/>
+<circle class="dot f3" cx="510.7" cy="236.7" r="4"/>
+<circle class="dot f3" cx="581.8" cy="198.7" r="4"/>
+<circle class="dot f3" cx="652.9" cy="180.4" r="4"/>
+<circle class="dot f3" cx="724.0" cy="163.4" r="4"/>
+<polyline class="line s4" points="84.0,417.3 155.1,388.2 226.2,364.6 297.3,346.1 368.4,326.0 439.6,289.5 510.7,243.0 581.8,210.4 652.9,189.1 724.0,174.1"/>
+<circle class="dot f4" cx="84.0" cy="417.3" r="4"/>
+<circle class="dot f4" cx="155.1" cy="388.2" r="4"/>
+<circle class="dot f4" cx="226.2" cy="364.6" r="4"/>
+<circle class="dot f4" cx="297.3" cy="346.1" r="4"/>
+<circle class="dot f4" cx="368.4" cy="326.0" r="4"/>
+<circle class="dot f4" cx="439.6" cy="289.5" r="4"/>
+<circle class="dot f4" cx="510.7" cy="243.0" r="4"/>
+<circle class="dot f4" cx="581.8" cy="210.4" r="4"/>
+<circle class="dot f4" cx="652.9" cy="189.1" r="4"/>
+<circle class="dot f4" cx="724.0" cy="174.1" r="4"/>
+<text x="744.0" y="128.6" class="note" text-anchor="start">FIFO + NEAREST  2 329 s</text>
+<line class="leader" x1="730" y1="125.3" x2="740" y2="141.6"/>
+<text x="744.0" y="145.6" class="note" text-anchor="start">FIFO + ETA  2 301 s</text>
+<text x="744.0" y="167.4" class="note" text-anchor="start">LOOK + NEAREST  1 193 s</text>
+<line class="leader" x1="730" y1="174.1" x2="740" y2="180.4"/>
+<text x="744.0" y="184.4" class="note" text-anchor="start">LOOK + ETA  992 s</text>
+</svg>

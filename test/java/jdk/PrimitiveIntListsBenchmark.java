@@ -29,40 +29,16 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-/**
- * The same operations written by hand on a plain {@code int[]}, and done through fastutil's and
- * Eclipse Collections' {@code IntArrayList}, with {@code ArrayList<Integer>} alongside as the boxed
- * baseline both libraries exist to replace. {@link PrimitiveIntListsTest} pins down how the three
- * behave; this measures only how fast.
- *
- * <p>Methods are named {@code <operation>_<container>[_<how>]}, so JMH's alphabetical report keeps
- * each operation's variants together. Within an operation every variant does the same work on the
- * same values and returns the same answer, and none of them changes the state the next invocation
- * reads: {@link PrimitiveIntListsBenchmarkTest} checks both, because neither mistake shows in a
- * timing.
- *
- * <p>The data is {@code size} random ints in {@code [0, size)}. That leaves about 63% of them
- * distinct, so {@code distinct} has duplicates to find, and it gives the bitmap variant the known,
- * small range it relies on. The fastutil class shares its simple name with Eclipse's, so it is
- * written out in full, as in the test.
- *
- * <p>Not run by the build: {@code scripts/perf/jmh.sh PrimitiveIntListsBenchmark} runs it pinned to
- * the P-cores. What it measured is in {@code docs/jdk/primitive-int-lists.md}.
- */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-// Prepend, not append: a -jvmArgsAppend on the command line (jmh.sh -- ...) replaces the annotation's
-// jvmArgsAppend instead of adding to it, and the heap would silently go back to the default.
 @Fork(value = 1, jvmArgsPrepend = {"-Xms2g", "-Xmx2g"})
 public class PrimitiveIntListsBenchmark {
 
-    /** Not in the data, so {@code contains} always scans to the end. */
     static final int ABSENT = -1;
 
-    /** 4 KB of ints, which fits in L1, and 4 MB, which fits only in L3. */
     @Param({"1000", "1000000"})
     public int size;
 
@@ -70,7 +46,6 @@ public class PrimitiveIntListsBenchmark {
     it.unimi.dsi.fastutil.ints.IntArrayList fastutil;
     MutableIntList eclipse;
     List<Integer> boxed;
-    /** Positions for {@code randomRead}, drawn separately from the values. */
     int[] indices;
 
     @Setup
@@ -82,17 +57,12 @@ public class PrimitiveIntListsBenchmark {
             array[i] = random.nextInt(size);
             indices[i] = random.nextInt(size);
         }
-        fastutil = new it.unimi.dsi.fastutil.ints.IntArrayList(array);   // copies
-        eclipse = IntArrayList.newListWith(array.clone());               // adopts, hence the clone
-        // The Integers are allocated one after another, in list order, so iterating them walks memory
-        // forwards: the best case for a boxed list.
+        fastutil = new it.unimi.dsi.fastutil.ints.IntArrayList(array);
+        eclipse = IntArrayList.newListWith(array.clone());
         boxed = new ArrayList<>(size);
         for (int v : array) boxed.add(v);
     }
 
-    // ---------- append: build a list of size values, starting empty ----------
-
-    /** The floor: the final size is known, so nothing grows. */
     @Benchmark
     public int[] append_array_presized() {
         int[] out = new int[size];
@@ -100,7 +70,6 @@ public class PrimitiveIntListsBenchmark {
         return out;
     }
 
-    /** By hand, growing the way both libraries do: 10 slots first, then half as many again. */
     @Benchmark
     public int[] append_array_grown() {
         int[] out = new int[10];
@@ -109,7 +78,7 @@ public class PrimitiveIntListsBenchmark {
             if (n == out.length) out = Arrays.copyOf(out, n + (n >> 1) + 1);
             out[n++] = v;
         }
-        return out;   // spare capacity included, as in the lists
+        return out;
     }
 
     @Benchmark
@@ -126,16 +95,12 @@ public class PrimitiveIntListsBenchmark {
         return list;
     }
 
-    /** Every value above 127 is a new {@code Integer}. */
     @Benchmark
     public List<Integer> append_boxed() {
         List<Integer> list = new ArrayList<>();
         for (int v : array) list.add(v);
         return list;
     }
-
-    // ---------- sum: one sequential pass ----------
-    // Into a long throughout: Eclipse's sum() returns one, and an int would overflow at the larger size.
 
     @Benchmark
     public long sum_array() {
@@ -151,7 +116,6 @@ public class PrimitiveIntListsBenchmark {
         return sum;
     }
 
-    /** fastutil hands out its backing array, which turns this back into the array loop. */
     @Benchmark
     public long sum_fastutil_elements() {
         int[] elements = fastutil.elements();
@@ -160,10 +124,6 @@ public class PrimitiveIntListsBenchmark {
         return sum;
     }
 
-    /**
-     * The loop everyone writes. A fastutil list is an {@code Iterable<Integer>}, so this compiles to
-     * the boxing {@code next()}, not {@code nextInt()}, and nothing in the source says so.
-     */
     @Benchmark
     public long sum_fastutil_forEachLoop() {
         long sum = 0;
@@ -197,8 +157,6 @@ public class PrimitiveIntListsBenchmark {
         return sum;
     }
 
-    // ---------- randomRead: size reads at random positions ----------
-
     @Benchmark
     public long randomRead_array() {
         long sum = 0;
@@ -220,7 +178,6 @@ public class PrimitiveIntListsBenchmark {
         return sum;
     }
 
-    /** Two dependent loads per read: the reference, then the {@code Integer} it points to. */
     @Benchmark
     public long randomRead_boxed() {
         long sum = 0;
@@ -228,18 +185,12 @@ public class PrimitiveIntListsBenchmark {
         return sum;
     }
 
-    // ---------- contains: a linear search for a value that is not there ----------
-
     @Benchmark
     public boolean contains_array() {
         for (int v : array) if (v == ABSENT) return true;
         return false;
     }
 
-    /**
-     * No early exit, so the loop is a reduction like {@code sum_array}, the shape C2 vectorizes. It
-     * does not vectorize this one: kept as the negative result, since it is the obvious thing to try.
-     */
     @Benchmark
     public boolean contains_array_noEarlyExit() {
         int hits = 0;
@@ -257,13 +208,10 @@ public class PrimitiveIntListsBenchmark {
         return eclipse.contains(ABSENT);
     }
 
-    /** {@code Integer.equals} per element, against a key boxed once. */
     @Benchmark
     public boolean contains_boxed() {
         return boxed.contains(ABSENT);
     }
-
-    // ---------- sort: ascending, on a fresh copy (the copy is in every variant) ----------
 
     @Benchmark
     public int[] sort_array() {
@@ -272,7 +220,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    /** fastutil's comparison sort, on the same raw array. */
     @Benchmark
     public int[] sort_fastutil_quickSort() {
         int[] copy = array.clone();
@@ -280,7 +227,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    /** The list's own sort: radix sort from 2 000 elements, quicksort below. Never Arrays.sort. */
     @Benchmark
     public it.unimi.dsi.fastutil.ints.IntArrayList sort_fastutil() {
         var copy = fastutil.clone();
@@ -288,7 +234,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    /** {@code sortThis()} is {@code Arrays.sort} on the backing array. */
     @Benchmark
     public MutableIntList sort_eclipse() {
         return IntArrayList.newList(eclipse).sortThis();
@@ -301,9 +246,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    // ---------- sortDescending: the order Arrays.sort(int[]) cannot be asked for ----------
-
-    /** Ascending, then reversed in place: one more pass instead of a comparator. */
     @Benchmark
     public int[] sortDescending_array() {
         int[] copy = array.clone();
@@ -316,7 +258,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    /** {@code sort} with a comparator is a stable merge sort, with a second array to merge through. */
     @Benchmark
     public it.unimi.dsi.fastutil.ints.IntArrayList sortDescending_fastutil() {
         var copy = fastutil.clone();
@@ -324,7 +265,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    /** {@code unstableSort} with the same comparator is quicksort, in place. */
     @Benchmark
     public it.unimi.dsi.fastutil.ints.IntArrayList sortDescending_fastutil_unstable() {
         var copy = fastutil.clone();
@@ -337,7 +277,6 @@ public class PrimitiveIntListsBenchmark {
         return IntArrayList.newList(eclipse).sortThis().reverseThis();
     }
 
-    /** With a comparator Eclipse leaves Arrays.sort for its own quicksort. */
     @Benchmark
     public MutableIntList sortDescending_eclipse_comparator() {
         return IntArrayList.newList(eclipse).sortThis((a, b) -> Integer.compare(b, a));
@@ -350,9 +289,6 @@ public class PrimitiveIntListsBenchmark {
         return copy;
     }
 
-    // ---------- distinct: how many different values there are ----------
-
-    /** Sort a copy, then count where the value changes. */
     @Benchmark
     public int distinct_array_sort() {
         int[] copy = array.clone();
@@ -362,11 +298,6 @@ public class PrimitiveIntListsBenchmark {
         return distinct;
     }
 
-    /**
-     * One bit per possible value. Only possible because the values are known to lie in
-     * {@code [0, size)}: hand-written code can use what you know about the data, and a general
-     * purpose set cannot.
-     */
     @Benchmark
     public int distinct_array_bitmap() {
         long[] seen = new long[(size + 63) >>> 6];
@@ -376,19 +307,16 @@ public class PrimitiveIntListsBenchmark {
         return distinct;
     }
 
-    /** Open addressing with linear probing, presized from the list. */
     @Benchmark
     public int distinct_fastutil() {
         return new IntOpenHashSet(fastutil).size();
     }
 
-    /** {@code toSet()} starts from the default capacity and rehashes its way up. */
     @Benchmark
     public int distinct_eclipse() {
         return eclipse.toSet().size();
     }
 
-    /** The same set, sized for the list before the first add, as fastutil's constructor does. */
     @Benchmark
     public int distinct_eclipse_presized() {
         MutableIntSet set = new IntHashSet(eclipse.size());

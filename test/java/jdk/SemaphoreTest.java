@@ -16,28 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * The JDK's {@link Semaphore} contract, and the five behaviours that surprise people who reach for
- * it expecting a lock. Like {@link MapConcurrentTest} these tests pin down the platform rather than
- * this repository's code — and three of them are the reason {@link EqualShareSemaphore} exists.
- *
- * <ol>
- *   <li>A permit has no owner: anyone can release one, including someone who never acquired it.</li>
- *   <li>{@code acquire(n)} is all-or-nothing, which is exactly why acquiring twice can deadlock.</li>
- *   <li>{@code tryAcquire()} ignores fairness; {@code tryAcquire(n, timeout, unit)} honours it.</li>
- *   <li>{@code drainPermits()} closes the gate in one move.</li>
- *   <li>Permits count in both directions: a semaphore can start negative, and {@code acquire(n)}
- *       is a "wait for n things to finish" latch.</li>
- * </ol>
- */
 class SemaphoreTest {
 
     @ParameterizedTest(name = "{0} bare releases")
     @ValueSource(ints = {1, 3, 10})
     void releaseCreatesPermitsItWasNeverGiven(int bareReleases) {
-        // not an error, not a no-op: the "bound" simply moves. Any code path that can release
-        // twice has silently resized the pool, which is why a ticket that closes once is worth
-        // having (see EqualShareSemaphore.Ticket)
         assertEquals(2 + bareReleases, permitsAfterBareReleases(bareReleases));
     }
 
@@ -46,7 +29,6 @@ class SemaphoreTest {
     void aPermitMayBeReleasedByAnotherThread() throws InterruptedException {
         assertTrue(releasedByAnotherThread());
 
-        // the same property directly: this is what makes producer-acquires/worker-releases legal
         Semaphore mutex = new Semaphore(1);
         mutex.acquire();
         Thread other = new Thread(mutex::release);
@@ -57,13 +39,9 @@ class SemaphoreTest {
         assertFalse(mutex.isFair());
     }
 
-    // ---------- hold and wait ----------
-
     @Test
     @Timeout(60)
     void twoCallersHoldingHalfEachDeadlock() throws InterruptedException {
-        // deterministic, not a race: zero permits are free and both callers are parked, so no
-        // thread remains that could release one
         assertTrue(bothCallersStuckHoldingHalf(300),
                 "the standoff resolved itself, which should be impossible");
     }
@@ -72,8 +50,6 @@ class SemaphoreTest {
     @ValueSource(longs = {50, 300})
     @Timeout(60)
     void aTimeoutCannotLetBothCallersThrough(long timeoutMillis) throws InterruptedException {
-        // 0 or 1, depending on whether one caller's timeout fires far enough ahead of the other's
-        // to release its pair in time. Never 2: there are 4 permits and each caller needs 4.
         int through = callersThatGotTheirSecondPair(timeoutMillis);
         assertTrue(through <= 1, "both callers got their second pair, which the arithmetic forbids");
     }
@@ -87,7 +63,6 @@ class SemaphoreTest {
     @Test
     @Timeout(30)
     void acquireIsAllOrNothing() throws InterruptedException {
-        // a request for more than exists takes nothing at all — no partial hold to leak
         Semaphore pool = new Semaphore(3);
         assertFalse(pool.tryAcquire(5));
         assertEquals(3, pool.availablePermits());
@@ -105,7 +80,7 @@ class SemaphoreTest {
         Thread greedy = new Thread(() -> {
             started.countDown();
             try {
-                pool.acquire(5);                      // more than exists: parks
+                pool.acquire(5);
             } catch (Throwable t) {
                 thrown.set(t);
             }
@@ -121,8 +96,6 @@ class SemaphoreTest {
         assertInstanceOf(InterruptedException.class, thrown.get());
         assertEquals(3, pool.availablePermits(), "an interrupted acquire must not hold anything");
     }
-
-    // ---------- fairness applies to some methods and not others ----------
 
     @ParameterizedTest(name = "fair={0}")
     @ValueSource(booleans = {false, true})
@@ -144,8 +117,6 @@ class SemaphoreTest {
                      : "an unfair semaphore should hand it over immediately");
     }
 
-    // ---------- drainPermits ----------
-
     @Test
     @Timeout(30)
     void drainPermitsTakesOnlyWhatIsFree() throws InterruptedException {
@@ -163,8 +134,6 @@ class SemaphoreTest {
         assertEquals(0, gate.drainPermits());
         assertEquals(0, gate.availablePermits());
     }
-
-    // ---------- counting in both directions ----------
 
     @ParameterizedTest(name = "{0} workers")
     @ValueSource(ints = {1, 4, 32})
@@ -192,7 +161,6 @@ class SemaphoreTest {
     @Test
     @Timeout(30)
     void permitsSurviveBeingCountedBackUp() throws InterruptedException {
-        // unlike a CountDownLatch, the count is reusable: the permits are still there afterwards
         Semaphore finished = new Semaphore(0);
         finished.release(3);
         finished.acquire(3);
@@ -202,21 +170,10 @@ class SemaphoreTest {
                 "the same semaphore should be usable for a second round");
     }
 
-    // ---------- fairness is about order, and it costs ----------
-
-    /** What one barging measurement produced. */
     private record Barging(long acquisitions, long selfSuccessions) {
-        /** Share of acquisitions where the permit went straight back to its last holder. */
         double selfRate() { return acquisitions == 0 ? 0 : (double) selfSuccessions / acquisitions; }
     }
 
-    /**
-     * Counts the handoff, not the winners. Two obvious metrics measure nothing here: a fixed
-     * number of acquisitions per thread makes the counts equal by construction, and per-thread
-     * counts over a fixed window are dominated by startup skew — measured across 4 to 48 threads,
-     * the fair run's spread was frequently the worse of the two. Barging is a question about who
-     * gets the permit next, so that is what this counts.
-     */
     private static Barging barging(int threads, int millis, boolean fair) throws InterruptedException {
         Semaphore gate = new Semaphore(1, fair);
         AtomicInteger lastHolder = new AtomicInteger(-1);
@@ -235,12 +192,12 @@ class SemaphoreTest {
                 try {
                     go.await();
                     while (System.nanoTime() < deadline[0]) {
-                        for (int i = 0; i < 64; i++) {           // amortise the clock read
+                        for (int i = 0; i < 64; i++) {
                             gate.acquire();
                             if (lastHolder.getAndSet(id) == id) selfs++;
                             mine++;
-                            Thread.onSpinWait();                 // a tiny critical section
-                            gate.release();                      // ...then grab it straight back
+                            Thread.onSpinWait();
+                            gate.release();
                         }
                     }
                 } catch (InterruptedException e) {
@@ -253,7 +210,7 @@ class SemaphoreTest {
             workers[t].setDaemon(true);
             workers[t].start();
         }
-        ready.await();                                           // no startup skew in the window
+        ready.await();
         deadline[0] = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis);
         go.countDown();
         for (Thread w : workers) w.join(TimeUnit.SECONDS.toMillis(30));
@@ -278,27 +235,12 @@ class SemaphoreTest {
                 Math.round(100 * fair.selfRate()) + "% self-succession on a fair semaphore");
     }
 
-    // ---------- 1. a permit has no owner ----------
-
-    /**
-     * {@code release()} does not check that you hold anything — it <em>creates</em> a permit. A
-     * double release is therefore not an error but a silent capacity increase, and the pool you
-     * thought was bounded at 2 is now bounded at 5. This is the bug {@code EqualShareSemaphore}'s
-     * idempotent {@code Ticket} exists to make impossible.
-     *
-     * @return permits available after {@code bareReleases} releases on a fresh {@code Semaphore(2)}
-     */
     private static int permitsAfterBareReleases(int bareReleases) {
         Semaphore pool = new Semaphore(2);
         for (int i = 0; i < bareReleases; i++) pool.release();
         return pool.availablePermits();
     }
 
-    /**
-     * The same property read the other way, and the reason a semaphore is not a mutex: the thread
-     * that releases need not be the thread that acquired. Useful — it is how a permit taken by a
-     * producer is returned by the worker that finishes the job — and dangerous for the same reason.
-     */
     private static boolean releasedByAnotherThread() throws InterruptedException {
         Semaphore mutex = new Semaphore(1);
         mutex.acquire();
@@ -308,19 +250,6 @@ class SemaphoreTest {
         return mutex.availablePermits() == 1;
     }
 
-    // ---------- 2. acquire(n) is atomic, which is what makes acquiring twice dangerous ----------
-
-    /**
-     * Two callers, four permits, and each wants two now and two later. Both get their first pair,
-     * so nothing is left for either second pair, and nothing will ever be released — the classic
-     * hold-and-wait deadlock, reached without a single lock.
-     *
-     * <p>This is deterministic rather than a race: with zero permits available and both callers
-     * parked in {@code acquire(2)}, there is no thread left that could release one. The method
-     * builds that deadlock, observes it, and then interrupts its way out.
-     *
-     * @return true if, after {@code observeMillis}, neither caller has moved
-     */
     private static boolean bothCallersStuckHoldingHalf(long observeMillis) throws InterruptedException {
         Semaphore pool = new Semaphore(4);
         CountDownLatch bothHoldTwo = new CountDownLatch(2);
@@ -328,14 +257,14 @@ class SemaphoreTest {
 
         Runnable caller = () -> {
             try {
-                pool.acquire(2);                       // first pair: always fine
+                pool.acquire(2);
                 bothHoldTwo.countDown();
-                bothHoldTwo.await();                   // ...now nothing is left
-                pool.acquire(2);                       // no timeout: this is the deadlock
+                bothHoldTwo.await();
+                pool.acquire(2);
                 gotSecondPair.incrementAndGet();
                 pool.release(4);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();     // the way out, since nothing else frees it
+                Thread.currentThread().interrupt();
             }
         };
         Thread a = new Thread(caller);
@@ -358,15 +287,6 @@ class SemaphoreTest {
         return stuck;
     }
 
-    /**
-     * The same standoff with {@code tryAcquire(2, timeout)} instead. A timeout cannot make both
-     * callers succeed — there are only four permits and each needs four — but it does turn a
-     * permanent deadlock into a refusal. Which caller gets through, if any, is a race: whoever
-     * gives up first releases its pair, and the other may still be inside its own timeout window
-     * and take it. So the invariant is "at most one", never "exactly none".
-     *
-     * @return how many of the two callers got their second pair: 0 or 1, never 2
-     */
     private static int callersThatGotTheirSecondPair(long timeoutMillis) throws InterruptedException {
         Semaphore pool = new Semaphore(4);
         AtomicInteger succeeded = new AtomicInteger();
@@ -397,13 +317,12 @@ class SemaphoreTest {
         return succeeded.get();
     }
 
-    /** The same four permits, taken in one call instead of two: no hold-and-wait, no deadlock. */
     private static boolean takenInOneCall() throws InterruptedException {
         Semaphore pool = new Semaphore(4);
         AtomicInteger completed = new AtomicInteger();
         Runnable caller = () -> {
             try {
-                pool.acquire(4);                       // all of it, or nothing
+                pool.acquire(4);
                 try {
                     completed.incrementAndGet();
                 } finally {
@@ -422,65 +341,41 @@ class SemaphoreTest {
         return completed.get() == 2 && pool.availablePermits() == 4;
     }
 
-    // ---------- 3. tryAcquire() is not subject to fairness ----------
-
     private record Barge(boolean withoutTimeout, boolean withTimeout, int available) {}
 
-    /**
-     * A big request is parked — {@code acquire(5)} against three permits — and a small one arrives.
-     * On a <b>fair</b> semaphore the small request is supposed to queue behind it, and with a
-     * timeout it does. The no-argument {@code tryAcquire()} barges anyway: it is documented to
-     * ignore the fairness setting, and it is the single most surprising line in the class.
-     */
     private static Barge smallRequestMeetsAParkedBigOne(boolean fair) throws InterruptedException {
         Semaphore pool = new Semaphore(3, fair);
         Thread big = new Thread(() -> {
             try {
-                pool.acquire(5);                       // never satisfiable here; it parks
+                pool.acquire(5);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
-        big.setDaemon(true);                           // it is never woken; it must not outlive us
+        big.setDaemon(true);
         big.start();
-        while (!pool.hasQueuedThreads()) Thread.onSpinWait();   // wait until it is really queued
+        while (!pool.hasQueuedThreads()) Thread.onSpinWait();
 
-        boolean barged = pool.tryAcquire();            // ignores fairness, always
+        boolean barged = pool.tryAcquire();
         if (barged) pool.release();
-        boolean queued = pool.tryAcquire(1, 50, TimeUnit.MILLISECONDS);   // honours fairness
+        boolean queued = pool.tryAcquire(1, 50, TimeUnit.MILLISECONDS);
         if (queued) pool.release();
 
         return new Barge(barged, queued, pool.availablePermits());
     }
 
-    // ---------- 4. drainPermits(): closing the gate in one move ----------
-
     private record Drain(int taken, int leftAvailable, boolean stillOpen, int afterReopen) {}
 
-    /**
-     * {@code drainPermits()} takes everything that is free, in one atomic step, and returns how
-     * much that was. It is how you stop new entrants without disturbing the ones already inside:
-     * permits already held are not affected and come back later — which is why reopening means
-     * releasing what you drained, not resetting a count.
-     */
     private static Drain closeAndReopen(int permits, int alreadyHeld) throws InterruptedException {
         Semaphore gate = new Semaphore(permits);
-        gate.acquire(alreadyHeld);                     // somebody is already inside
+        gate.acquire(alreadyHeld);
 
-        int taken = gate.drainPermits();               // close
+        int taken = gate.drainPermits();
         boolean stillOpen = gate.tryAcquire();
-        gate.release(taken);                           // reopen with exactly what we took
+        gate.release(taken);
         return new Drain(taken, permits - alreadyHeld - taken, stillOpen, gate.availablePermits());
     }
 
-    // ---------- 5. permits count in both directions ----------
-
-    /**
-     * {@code acquire(n)} against a semaphore that starts at zero is a "wait for n completions"
-     * latch: each worker releases one permit as it finishes, and the coordinator asks for all of
-     * them at once. Unlike a {@code CountDownLatch} the count can be reused — the permits are
-     * still there to be taken again.
-     */
     private static long millisToAwait(int workers) throws InterruptedException {
         Semaphore finished = new Semaphore(0);
         for (int i = 0; i < workers; i++) {
@@ -489,18 +384,12 @@ class SemaphoreTest {
             worker.start();
         }
         long start = System.nanoTime();
-        finished.acquire(workers);                     // returns only when all of them are done
+        finished.acquire(workers);
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
     }
 
-    /**
-     * A semaphore may start below zero, which is the same idea stated as a debt: three releases
-     * are needed before a single acquire can succeed.
-     */
     private static int permitsOfADebtOf(int debt) {
         return new Semaphore(-debt).availablePermits();
     }
-
-    // ---------- permits have no owner ----------
 
 }

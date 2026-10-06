@@ -35,7 +35,6 @@ class LeftRotationTest {
                 Arguments.of("d = n - 1 moves one back", new int[]{1, 2, 3}, 2, new int[]{3, 1, 2}),
                 Arguments.of("repeated values", new int[]{4, 4, 9, 4}, 2, new int[]{9, 4, 4, 4}),
 
-                // gcd(n, d) > 1: the cycle walk needs more than one pass here, and only here.
                 Arguments.of("n=6 d=4, gcd 2", new int[]{1, 2, 3, 4, 5, 6}, 4, new int[]{5, 6, 1, 2, 3, 4}),
                 Arguments.of("n=6 d=3, gcd 3", new int[]{1, 2, 3, 4, 5, 6}, 3, new int[]{4, 5, 6, 1, 2, 3}),
                 Arguments.of("n=6 d=2, gcd 2", new int[]{1, 2, 3, 4, 5, 6}, 2, new int[]{3, 4, 5, 6, 1, 2}),
@@ -44,7 +43,6 @@ class LeftRotationTest {
                 Arguments.of("n=12 d=8, gcd 4", new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 8,
                         new int[]{9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8}),
 
-                // Outside the problem's 1 <= d <= n, where floorMod does the work.
                 Arguments.of("d > n wraps", new int[]{1, 2, 3, 4, 5}, 17, new int[]{3, 4, 5, 1, 2}),
                 Arguments.of("negative d rotates right", new int[]{1, 2, 3, 4, 5}, -1, new int[]{5, 1, 2, 3, 4}),
                 Arguments.of("negative d beyond n", new int[]{1, 2, 3, 4, 5}, -13, new int[]{3, 4, 5, 1, 2}),
@@ -76,7 +74,7 @@ class LeftRotationTest {
         int[] rotated = rotLeft(a, 0);
 
         rotated[0] = 99;
-        assertEquals(1, a[0]);   // the "identity" rotation must not alias the input
+        assertEquals(1, a[0]);
     }
 
     @Test
@@ -86,14 +84,6 @@ class LeftRotationTest {
         assertThrows(IllegalArgumentException.class, () -> rotateLeftInPlaceByCycles(null, 1));
     }
 
-    // --- cross-checks against independent oracles -----------------------------------------------
-
-    /**
-     * Every {@code (n, d)} pair a small array can have, against the naive repeated-rotation
-     * definition. This is the test that pins the cycle walk: it fails for any {@code n} and
-     * {@code d} sharing a factor if the walk is restarted the wrong number of times, and those
-     * pairs are a minority that a handful of samples can easily miss.
-     */
     @Test
     void matchesRepeatedSingleRotationsForEveryPairUpToFortyElements() {
         for (int n = 0; n <= 40; n++) {
@@ -110,7 +100,6 @@ class LeftRotationTest {
         }
     }
 
-    /** The JDK's own rotation, which is the same permutation with the opposite sign convention. */
     @Test
     void matchesCollectionsRotateOnRandomArrays() {
         Random random = new Random(20260912L);
@@ -143,21 +132,10 @@ class LeftRotationTest {
         }
     }
 
-    // --- large arrays ---------------------------------------------------------------------------
-
-    /**
-     * 10 million elements. The array is {@code a[i] = i}, so the whole rotation can be checked
-     * against the closed form {@code rotated[i] == (i + d) mod n} without building a second array -
-     * which also makes the check independent of every strategy under test.
-     * <p>
-     * {@code d} shares a large factor with {@code n} on purpose, so the cycle walk has to run
-     * 2 500 000 separate cycles of 4 elements rather than one long one - the structural case that
-     * a coprime sample would never reach.
-     */
     @Test
     void rotatesTenMillionElements() {
         int n = 10_000_000;
-        int d = 7_500_000;                   // gcd(n, d) = 2 500 000
+        int d = 7_500_000;
         int[] a = new int[n];
         Arrays.setAll(a, i -> i);
 
@@ -168,10 +146,9 @@ class LeftRotationTest {
         });
     }
 
-    /** The same size with {@code n} and {@code d} coprime, so the cycle walk is one long cycle. */
     @Test
     void rotatesTenMillionElementsInASingleCycle() {
-        int n = 10_000_001;                  // odd, and coprime with d below
+        int n = 10_000_001;
         int d = 5_000_000;
         int[] a = new int[n];
         Arrays.setAll(a, i -> i);
@@ -189,16 +166,12 @@ class LeftRotationTest {
         }
     }
 
-    // --- reference implementations ---------------------------------------------------------------
-
-    /** Applies a void in-place rotation to a copy of {@code a} and returns the copy. */
     private static int[] inPlace(ObjIntConsumer<int[]> rotation, int[] a, int d) {
         int[] copy = a.clone();
         rotation.accept(copy, d);
         return copy;
     }
 
-    /** The problem read literally: {@code d} rotations of one position each, O(n*d). */
     private static int[] rotateOneStepAtATime(int[] a, int d) {
         int[] rotated = a.clone();
         int n = rotated.length;
@@ -212,7 +185,6 @@ class LeftRotationTest {
         return rotated;
     }
 
-    /** {@link Collections#rotate} - note the sign: a positive distance there rotates <i>right</i>. */
     private static int[] rotateViaCollections(int[] a, int d) {
         List<Integer> list = new ArrayList<>(a.length);
         for (int value : a) {
@@ -220,7 +192,7 @@ class LeftRotationTest {
         }
 
         if (!list.isEmpty()) {
-            Collections.rotate(list, -normalize(d, a.length));   // normalized first: -MIN_VALUE overflows
+            Collections.rotate(list, -normalize(d, a.length));
         }
 
         int[] rotated = new int[list.size()];
@@ -230,7 +202,6 @@ class LeftRotationTest {
         return rotated;
     }
 
-    /** {@code floorMod} written out, so the oracles do not share the implementation's normalization. */
     private static int normalize(int d, int n) {
         return ((d % n) + n) % n;
     }

@@ -1,29 +1,30 @@
-package unclassified;
+package greedy;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import unclassified.TwoElevators.Assignment;
-import unclassified.TwoElevators.Passenger;
-import unclassified.TwoElevators.Result;
-import unclassified.TwoElevators.Simulation;
-import unclassified.TwoElevators.Stop;
-import unclassified.TwoElevators.StopOrder;
-import unclassified.TwoElevators.Strategy;
-import unclassified.TwoElevators.Traffic;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
+import greedy.TwoElevators.Assignment;
+import greedy.TwoElevators.Passenger;
+import greedy.TwoElevators.Result;
+import greedy.TwoElevators.Simulation;
+import greedy.TwoElevators.Stop;
+import greedy.TwoElevators.StopOrder;
+import greedy.TwoElevators.Strategy;
+import greedy.TwoElevators.Traffic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static unclassified.TwoElevators.DOOR_SECONDS;
-import static unclassified.TwoElevators.SECONDS_PER_FLOOR;
-import static unclassified.TwoElevators.SECONDS_PER_PERSON;
+import static greedy.TwoElevators.DOOR_SECONDS;
+import static greedy.TwoElevators.SECONDS_PER_FLOOR;
+import static greedy.TwoElevators.SECONDS_PER_PERSON;
 
 class TwoElevatorsTest {
 
@@ -39,8 +40,6 @@ class TwoElevatorsTest {
         return new Simulation(strategy, 2, List.of(passengers), true).run(10_000);
     }
 
-    // ---------- the floors as bits ----------
-
     @Test
     void aboveAndBelowAreTheFloorsStrictlyOnEitherSide() {
         assertEquals(0b1111_1111_1111_1111_1110, TwoElevators.above(0));
@@ -52,21 +51,16 @@ class TwoElevatorsTest {
                 TwoElevators.above(7) | TwoElevators.below(7), "together, every floor but the one you are on");
     }
 
-    // ---------- time ----------
-
     @Test
     void aTripCostsTheDoorsPlusTwoSecondsAFloor() {
         Simulation sim = oneCar(LOOK_ETA, new Passenger(0, 0, 0, 10));
-        int boarding = DOOR_SECONDS + SECONDS_PER_PERSON;            // one person gets in
+        int boarding = DOOR_SECONDS + SECONDS_PER_PERSON;
         assertEquals(0, sim.waitOf(0), "the car is already there");
         assertEquals(boarding + 10 * SECONDS_PER_FLOOR, sim.deliveredAt(0));
         assertEquals(List.of(0, 0, 0, 0, 0, 0, 0, 1, 2, 3), sim.positions(0).subList(0, 10),
                 "half floors: six seconds of doors, then half a floor a second");
     }
 
-    // ---------- the order one car visits its floors in ----------
-
-    /** Three people get in on the ground floor, pressing 12, 5 and 9 in that order. */
     private static final Passenger[] THREE_FROM_THE_LOBBY = {
             new Passenger(0, 0, 0, 12), new Passenger(1, 0, 0, 5), new Passenger(2, 0, 0, 9)};
 
@@ -88,7 +82,6 @@ class TwoElevatorsTest {
 
     @Test
     void lookTakesAHallCallOnTheWayOnlyIfItIsGoingTheSameWay() {
-        // the car leaves the ground floor for 15; at second 8 it is at floor 1, below 8
         Simulation goingUp = oneCar(LOOK_ETA, new Passenger(0, 0, 0, 15), new Passenger(1, 8, 8, 12));
         assertEquals(List.of(0, 8, 12, 15), goingUp.stopFloors(0), "someone going up at 8 is picked up on the way");
 
@@ -99,7 +92,6 @@ class TwoElevatorsTest {
 
     @Test
     void lookGoesOnToACallTheOtherWayAndTurnsThere() {
-        // nothing is above 15 but a call to go down from it: the car goes up to it and turns
         Simulation sim = oneCar(LOOK_ETA, new Passenger(0, 0, 0, 10), new Passenger(1, 1, 15, 3));
         assertEquals(List.of(0, 10, 15, 3), sim.stopFloors(0));
     }
@@ -116,13 +108,6 @@ class TwoElevatorsTest {
                 "a moving car does not turn for something nearer behind it");
     }
 
-    // ---------- which car answers ----------
-
-    /**
-     * Car 0 takes someone from the ground floor to 19. Twelve seconds later, when it is at floor 3,
-     * someone presses up on floor 2. Car 0 is the nearer, one floor away, but it has already passed
-     * the floor going up; car 1 is idle on the ground floor, two floors away.
-     */
     private static final Passenger[] PASSED_BY = {new Passenger(0, 0, 0, 19), new Passenger(1, 12, 2, 10)};
 
     @Test
@@ -139,8 +124,6 @@ class TwoElevatorsTest {
         assertEquals(1, sim.carOf(1));
         assertEquals(2 * SECONDS_PER_FLOOR, sim.waitOf(1), "two floors up from the ground floor");
     }
-
-    // ---------- what must hold whatever the strategy ----------
 
     static Stream<Arguments> strategiesAndTraffic() {
         return Strategy.ALL.stream().flatMap(s -> Arrays.stream(Traffic.values()).map(t -> Arguments.of(s, t)));
@@ -166,8 +149,6 @@ class TwoElevatorsTest {
     @ParameterizedTest(name = "{0}")
     @EnumSource(Traffic.class)
     void aCarNeverStopsWithoutLettingSomeoneOutOrIn(Traffic traffic) {
-        // LOOK stops only for a car call, or a hall call it can serve; FIFO may arrive to find its
-        // call answered by the other car, so the claim is LOOK's alone
         List<Passenger> passengers = TwoElevators.traffic(traffic, 4, TwoElevators.HOUR, 11);
         Simulation sim = new Simulation(LOOK_ETA, passengers).run(TwoElevators.LIMIT);
         for (int car = 0; car < TwoElevators.CARS; car++) {
@@ -186,9 +167,6 @@ class TwoElevatorsTest {
                 new Simulation(LOOK_ETA, b).run(TwoElevators.LIMIT).result());
     }
 
-    // ---------- the comparison ----------
-
-    /** The claim the notes make, checked on hours the notes did not average over. */
     @ParameterizedTest(name = "{0}")
     @EnumSource(Traffic.class)
     void lookWithEtaWaitsLeastOnAverage(Traffic traffic) {
@@ -208,8 +186,6 @@ class TwoElevatorsTest {
             }
         }
     }
-
-    // ---------- input ----------
 
     @Test
     void rejectsTripsThatAreNotTrips() {

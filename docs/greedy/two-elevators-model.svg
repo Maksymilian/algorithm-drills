@@ -1,0 +1,278 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 580" width="1100" height="580" role="img" aria-label="Hall buttons, car calls and assigned calls as one bit per floor for two cars">
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --lit:#52514e; --cell:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --lit:#c3c2b7; --cell:#2c2c2a; }
+  }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; fill: var(--ink2); }
+  .title { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .head { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .note { fill: var(--ink2); }
+  .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  .leader { stroke: var(--muted); stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .bg { fill: var(--surface); }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .axis { stroke: var(--axis); stroke-width: 1; }
+  .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .s1 { stroke: var(--s1); } .s2 { stroke: var(--s2); } .s3 { stroke: var(--s3); } .s4 { stroke: var(--s4); }
+  .f1 { fill: var(--s1); } .f2 { fill: var(--s2); } .f3 { fill: var(--s3); } .f4 { fill: var(--s4); }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  .wait { stroke: var(--ink2); stroke-width: 2; stroke-linecap: round; }
+  .call { fill: var(--surface); stroke: var(--ink2); stroke-width: 2; }
+  .cell { fill: var(--cell); }
+  .on { fill: var(--lit); }
+  .shaft { fill: none; stroke: var(--axis); stroke-width: 1; }
+</style>
+<rect class="bg" width="1100" height="580" rx="8"/>
+<text x="24.0" y="34.0" class="title" text-anchor="start">The state the dispatcher works from: one bit per floor</text>
+<text x="24.0" y="56.0" class="note" text-anchor="start">Ten bitmasks of 20 bits, and one queue of people per floor and direction. A lit cell is a 1.</text>
+<text x="96.0" y="106.0" class="tick" text-anchor="middle">floor</text>
+<text x="150.0" y="106.0" class="tick" text-anchor="middle">waiting</text>
+<text x="253.0" y="94.0" class="tick" text-anchor="middle">hall buttons</text>
+<text x="440.0" y="94.0" class="tick" text-anchor="middle">car 0 calls</text>
+<text x="650.0" y="94.0" class="tick" text-anchor="middle">car 1 calls</text>
+<text x="238.0" y="110.0" class="tick" text-anchor="middle">up</text>
+<text x="268.0" y="110.0" class="tick" text-anchor="middle">down</text>
+<text x="410.0" y="110.0" class="tick" text-anchor="middle">car</text>
+<text x="440.0" y="110.0" class="tick" text-anchor="middle">up</text>
+<text x="470.0" y="110.0" class="tick" text-anchor="middle">down</text>
+<text x="620.0" y="110.0" class="tick" text-anchor="middle">car</text>
+<text x="650.0" y="110.0" class="tick" text-anchor="middle">up</text>
+<text x="680.0" y="110.0" class="tick" text-anchor="middle">down</text>
+<text x="330.0" y="110.0" class="tick" text-anchor="middle">shaft</text>
+<text x="540.0" y="110.0" class="tick" text-anchor="middle">shaft</text>
+<text x="96.0" y="505.0" class="tick" text-anchor="middle">0</text>
+<rect class="cell" x="80" y="492.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="494" width="20" height="14" rx="3"/>
+<rect class="on" x="610" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="494" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="494" width="20" height="14" rx="3"/>
+<text x="96.0" y="486.0" class="tick" text-anchor="middle">1</text>
+<rect class="cell" x="228" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="475" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="475" width="20" height="14" rx="3"/>
+<text x="96.0" y="467.0" class="tick" text-anchor="middle">2</text>
+<rect class="cell" x="80" y="454.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="on" x="228" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="456" width="20" height="14" rx="3"/>
+<rect class="on" x="640" y="456" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="456" width="20" height="14" rx="3"/>
+<circle class="on" cx="124" cy="463" r="5"/>
+<text x="140.0" y="467.0" class="tick" text-anchor="start">▲ queue</text>
+<text x="96.0" y="448.0" class="tick" text-anchor="middle">3</text>
+<rect class="cell" x="228" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="437" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="437" width="20" height="14" rx="3"/>
+<text x="96.0" y="429.0" class="tick" text-anchor="middle">4</text>
+<rect class="cell" x="80" y="416.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="418" width="20" height="14" rx="3"/>
+<rect class="on" x="610" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="418" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="418" width="20" height="14" rx="3"/>
+<text x="96.0" y="410.0" class="tick" text-anchor="middle">5</text>
+<rect class="cell" x="228" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="399" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="399" width="20" height="14" rx="3"/>
+<text x="96.0" y="391.0" class="tick" text-anchor="middle">6</text>
+<rect class="cell" x="80" y="378.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="380" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="380" width="20" height="14" rx="3"/>
+<text x="96.0" y="372.0" class="tick" text-anchor="middle">7</text>
+<rect class="cell" x="228" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="361" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="361" width="20" height="14" rx="3"/>
+<text x="96.0" y="353.0" class="tick" text-anchor="middle">8</text>
+<rect class="cell" x="80" y="340.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="342" width="20" height="14" rx="3"/>
+<rect class="on" x="258" y="342" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="342" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="342" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="342" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="342" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="342" width="20" height="14" rx="3"/>
+<rect class="on" x="670" y="342" width="20" height="14" rx="3"/>
+<circle class="on" cx="124" cy="349" r="5"/>
+<circle class="on" cx="138" cy="349" r="5"/>
+<circle class="on" cx="152" cy="349" r="5"/>
+<text x="168.0" y="353.0" class="tick" text-anchor="start">▼ queue</text>
+<text x="96.0" y="334.0" class="tick" text-anchor="middle">9</text>
+<rect class="cell" x="228" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="323" width="20" height="14" rx="3"/>
+<rect class="on" x="400" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="323" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="323" width="20" height="14" rx="3"/>
+<text x="96.0" y="315.0" class="tick" text-anchor="middle">10</text>
+<rect class="cell" x="80" y="302.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="304" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="304" width="20" height="14" rx="3"/>
+<text x="96.0" y="296.0" class="tick" text-anchor="middle">11</text>
+<rect class="on" x="228" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="285" width="20" height="14" rx="3"/>
+<rect class="on" x="430" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="285" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="285" width="20" height="14" rx="3"/>
+<circle class="on" cx="124" cy="292" r="5"/>
+<circle class="on" cx="138" cy="292" r="5"/>
+<text x="154.0" y="296.0" class="tick" text-anchor="start">▲ queue</text>
+<text x="96.0" y="277.0" class="tick" text-anchor="middle">12</text>
+<rect class="cell" x="80" y="264.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="266" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="266" width="20" height="14" rx="3"/>
+<text x="96.0" y="258.0" class="tick" text-anchor="middle">13</text>
+<rect class="cell" x="228" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="247" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="247" width="20" height="14" rx="3"/>
+<text x="96.0" y="239.0" class="tick" text-anchor="middle">14</text>
+<rect class="cell" x="80" y="226.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="228" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="228" width="20" height="14" rx="3"/>
+<text x="96.0" y="220.0" class="tick" text-anchor="middle">15</text>
+<rect class="cell" x="228" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="209" width="20" height="14" rx="3"/>
+<rect class="on" x="400" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="209" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="209" width="20" height="14" rx="3"/>
+<text x="96.0" y="201.0" class="tick" text-anchor="middle">16</text>
+<rect class="cell" x="80" y="188.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="190" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="190" width="20" height="14" rx="3"/>
+<text x="96.0" y="182.0" class="tick" text-anchor="middle">17</text>
+<rect class="cell" x="228" y="171" width="20" height="14" rx="3"/>
+<rect class="on" x="258" y="171" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="171" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="171" width="20" height="14" rx="3"/>
+<rect class="on" x="460" y="171" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="171" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="171" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="171" width="20" height="14" rx="3"/>
+<circle class="on" cx="124" cy="178" r="5"/>
+<text x="140.0" y="182.0" class="tick" text-anchor="start">▼ queue</text>
+<text x="96.0" y="163.0" class="tick" text-anchor="middle">18</text>
+<rect class="cell" x="80" y="150.5" width="620" height="17" rx="2" opacity="0.45"/>
+<rect class="cell" x="228" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="152" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="152" width="20" height="14" rx="3"/>
+<text x="96.0" y="144.0" class="tick" text-anchor="middle">19</text>
+<rect class="cell" x="228" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="258" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="400" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="430" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="460" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="610" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="640" y="133" width="20" height="14" rx="3"/>
+<rect class="cell" x="670" y="133" width="20" height="14" rx="3"/>
+<rect class="shaft" x="314" y="130.5" width="32" height="380" rx="3"/>
+<rect class="f1" x="317" y="379" width="26" height="16" rx="4"/>
+<text x="352.0" y="391.0" class="note" text-anchor="start">▲</text>
+<rect class="shaft" x="524" y="130.5" width="32" height="380" rx="3"/>
+<rect class="f2" x="527" y="246" width="26" height="16" rx="4"/>
+<text x="562.0" y="258.0" class="note" text-anchor="start">▼</text>
+<text x="730.0" y="110.0" class="tick" text-anchor="start">as ints, floor 19 on the left</text>
+<text x="730.0" y="134.0" class="tick" text-anchor="start">upButtons</text>
+<text x="730.0" y="149.0" class="mono" text-anchor="start">00000000100000000100</text>
+<text x="730.0" y="170.0" class="tick" text-anchor="start">downButtons</text>
+<text x="730.0" y="185.0" class="mono" text-anchor="start">00100000000100000000</text>
+<text x="730.0" y="216.0" class="tick" text-anchor="start">car 0 carCalls</text>
+<text x="730.0" y="231.0" class="mono" text-anchor="start">00001000001000000000</text>
+<text x="730.0" y="252.0" class="tick" text-anchor="start">car 0 upCalls</text>
+<text x="730.0" y="267.0" class="mono" text-anchor="start">00000000100000000000</text>
+<text x="730.0" y="288.0" class="tick" text-anchor="start">car 0 downCalls</text>
+<text x="730.0" y="303.0" class="mono" text-anchor="start">00100000000000000000</text>
+<text x="730.0" y="334.0" class="tick" text-anchor="start">car 1 carCalls</text>
+<text x="730.0" y="349.0" class="mono" text-anchor="start">00000000000000010001</text>
+<text x="730.0" y="370.0" class="tick" text-anchor="start">car 1 upCalls</text>
+<text x="730.0" y="385.0" class="mono" text-anchor="start">00000000000000000100</text>
+<text x="730.0" y="406.0" class="tick" text-anchor="start">car 1 downCalls</text>
+<text x="730.0" y="421.0" class="mono" text-anchor="start">00000000000100000000</text>
+<text x="730.0" y="456.0" class="head" text-anchor="start">next stops, LOOK:</text>
+<text x="730.0" y="478.0" class="note" text-anchor="start">car 0: 9 → 11 → 15 → 17, turns</text>
+<text x="730.0" y="498.0" class="note" text-anchor="start">car 1: 8 → 4 → 0, turns → 2</text>
+<text x="730.0" y="526.0" class="mono" text-anchor="start">above(6) = 0b1111_1111_1111_1000_0000</text>
+<text x="730.0" y="544.0" class="mono" text-anchor="start">(carCalls | upCalls | downCalls) &amp; above(6)</text>
+<text x="730.0" y="562.0" class="note" text-anchor="start">≠ 0, so car 0 keeps going up</text>
+</svg>

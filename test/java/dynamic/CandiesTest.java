@@ -77,7 +77,6 @@ class CandiesTest {
         assertThrows(NullPointerException.class, () -> candies(2, Arrays.asList(1, null)));
     }
 
-    /** The platform passes the count alongside the list; the list is the line. */
     @Test
     void readsTheWholeListWhateverTheCountSays() {
         List<Integer> line = List.of(1, 2, 2);
@@ -87,12 +86,10 @@ class CandiesTest {
         assertEquals(4L, candies(99, line));
     }
 
-    // --- cross-checks ----------------------------------------------------------------------------
-
     @Test
     void matchesBruteForceOnEveryShortLine() {
         for (int n = 0; n <= 6; n++) {
-            for (int[] ratings : allLines(n, 3)) {   // every line over a 3-rating alphabet
+            for (int[] ratings : allLines(n, 3)) {
                 long expected = bruteForce(ratings);
                 assertEquals(expected, candies(ratings), Arrays.toString(ratings));
                 assertEquals(expected, candiesWithTable(ratings), Arrays.toString(ratings));
@@ -100,11 +97,6 @@ class CandiesTest {
         }
     }
 
-    /**
-     * Every rise/level/fall shape a line of up to six children can take - 3^(n-1) of them - brute
-     * forced. Three rating values cannot build a run longer than three, and long runs are exactly
-     * what the descent bookkeeping is for.
-     */
     @Test
     void matchesBruteForceOnEveryShortShape() {
         for (int n = 1; n <= 6; n++) {
@@ -122,7 +114,7 @@ class CandiesTest {
 
         for (int trial = 0; trial < 20_000; trial++) {
             int[] ratings = new int[random.nextInt(40)];
-            int distinct = 2 + random.nextInt(8);   // few values -> plateaus and short runs are common
+            int distinct = 2 + random.nextInt(8);
             for (int i = 0; i < ratings.length; i++) {
                 ratings[i] = random.nextInt(distinct);
             }
@@ -137,20 +129,13 @@ class CandiesTest {
         Random random = new Random(20260912L);
 
         for (int trial = 0; trial < 20_000; trial++) {
-            int[] ratings = randomWalk(random, random.nextInt(60));   // long runs, peaks and valleys
+            int[] ratings = randomWalk(random, random.nextInt(60));
             long expected = twoPassDp(ratings);
             assertEquals(expected, candies(ratings), Arrays.toString(ratings));
             assertEquals(expected, candiesWithTable(ratings), Arrays.toString(ratings));
         }
     }
 
-    // --- very large lines ------------------------------------------------------------------------
-
-    /**
-     * 10 million children, cross-checked against the two-pass form of the same recurrence. Never
-     * materialising the right-to-left pass is the one step that could plausibly break at scale, so
-     * it is worth checking against a table that is actually kept.
-     */
     @Test
     void matchesTwoPassDpOnTenMillionRandomRatings() {
         int[] ratings = new Random(20260912L).ints(10_000_000, 0, 10).toArray();
@@ -158,11 +143,10 @@ class CandiesTest {
         assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
             long expected = twoPassDp(ratings);
             assertEquals(expected, candies(ratings));
-            assertEquals(expected, candiesWithTable(ratings));   // 80 MB of tables, under the argLine
+            assertEquals(expected, candiesWithTable(ratings));
         });
     }
 
-    /** The same at 10 million, on a walk - so the runs are long and the peak bookkeeping matters. */
     @Test
     void matchesTwoPassDpOnATenMillionStepWalk() {
         int[] ratings = randomWalk(new Random(11L), 10_000_000);
@@ -171,7 +155,6 @@ class CandiesTest {
                 assertEquals(twoPassDp(ratings), candies(ratings)));
     }
 
-    /** At the problem's own bound a strictly increasing line already outgrows an {@code int}. */
     @Test
     void totalOutgrowsIntegerRangeWithinTheProblemsConstraints() {
         int n = 100_000;
@@ -184,11 +167,6 @@ class CandiesTest {
         assertTrue(total > Integer.MAX_VALUE, "the answer must not be returned as an int");
     }
 
-    /**
-     * 200 million children folded straight off a stream. The line is roughly 800 MB of ints, far
-     * more than this JVM's heap allows (see the surefire argLine in pom.xml), so it can only pass if
-     * the fold really does keep O(1) state and never materializes the input.
-     */
     @Test
     void foldsTwoHundredMillionChildrenFromAStream() {
         int n = 200_000_000;
@@ -196,7 +174,7 @@ class CandiesTest {
         long total = assertTimeoutPreemptively(Duration.ofSeconds(60), () ->
                 candies(IntStream.range(0, n)));
 
-        assertEquals(n * (n + 1L) / 2, total);   // strictly increasing, so 2 * 10^16
+        assertEquals(n * (n + 1L) / 2, total);
     }
 
     @Test
@@ -206,9 +184,6 @@ class CandiesTest {
         assertEquals(candies(ratings), candies(Arrays.stream(ratings).parallel()));
     }
 
-    // --- reference implementations ---------------------------------------------------------------
-
-    /** The textbook two passes, with both {@code L} and {@code R} kept: O(n) time, O(n) memory. */
     private static long twoPassDp(int[] ratings) {
         int n = ratings.length;
         int[] left = new int[n];
@@ -228,10 +203,6 @@ class CandiesTest {
         return total;
     }
 
-    /**
-     * Tries every handout in {@code {1..n}^n} and keeps the cheapest legal one. No minimal solution
-     * gives any child more than {@code n} candies, so the search is complete.
-     */
     private static long bruteForce(int[] ratings) {
         int n = ratings.length;
         if (n == 0) return 0;
@@ -247,14 +218,13 @@ class CandiesTest {
                 best = Math.min(best, total);
             }
 
-            int i = 0;                       // odometer over {1..n}^n
+            int i = 0;
             while (i < n && handout[i] == n) handout[i++] = 1;
             if (i == n) return best;
             handout[i]++;
         }
     }
 
-    /** Every child gets at least one, and outscores any immediate neighbour it outranks. */
     private static boolean isLegal(int[] ratings, int[] handout) {
         for (int i = 0; i < ratings.length; i++) {
             if (handout[i] < 1) return false;
@@ -264,7 +234,6 @@ class CandiesTest {
         return true;
     }
 
-    /** Every line of {@code length} children drawn from {@code distinct} ratings. */
     private static List<int[]> allLines(int length, int distinct) {
         List<int[]> lines = new ArrayList<>();
         int[] line = new int[length];
@@ -279,7 +248,6 @@ class CandiesTest {
         }
     }
 
-    /** One line per rise/level/fall pattern: every step moves the rating by +1, 0 or -1. */
     private static List<int[]> allShapes(int length) {
         List<int[]> shapes = new ArrayList<>();
         int steps = length - 1;
@@ -297,14 +265,13 @@ class CandiesTest {
         }
     }
 
-    /** A line that drifts by at most one per step, so monotone runs are long. */
     private static int[] randomWalk(Random random, int length) {
         int[] ratings = new int[length];
         int rating = 0;
 
         for (int i = 0; i < length; i++) {
             ratings[i] = rating;
-            rating += random.nextInt(3) - 1;   // -1, 0 or +1
+            rating += random.nextInt(3) - 1;
         }
         return ratings;
     }

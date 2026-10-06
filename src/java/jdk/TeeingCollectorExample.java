@@ -1,15 +1,13 @@
-package unclassified;
+package jdk;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Collectors.teeing (Java 12+) feeds every element to TWO downstream collectors
- * and then merges their results with a BiFunction. It is the answer to
- * "I need two different aggregates but I only want to traverse the stream once"
- * — which also makes it usable on a stream you cannot replay (a file, a socket).
- */
+/// `Collectors.teeing` (Java 12+) przekazuje każdy element do DWÓCH kolektorów podrzędnych, a potem
+/// łączy ich wyniki funkcją `BiFunction`. To odpowiedź na „potrzebuję dwóch różnych agregatów, ale
+/// chcę przejść strumień tylko raz”, więc działa też na strumieniu, którego nie da się powtórzyć
+/// (plik, gniazdo sieciowe).
 public class TeeingCollectorExample {
 
     record Order(String customer, String category, double amount) {}
@@ -20,9 +18,8 @@ public class TeeingCollectorExample {
 
     record Summary(long count, double total, double average, Range range) {}
 
-    // ---------- 1. two aggregates, one pass ----------
+    // ---------- 1. dwa agregaty, jedno przejście ----------
 
-    /** min and max without traversing the list twice. */
     static Range minMax(List<Order> orders) {
         return orders.stream().collect(Collectors.teeing(
                 Collectors.minBy((a, b) -> Double.compare(a.amount(), b.amount())),
@@ -32,7 +29,6 @@ public class TeeingCollectorExample {
                         max.map(Order::amount).orElse(Double.NaN))));
     }
 
-    /** The classic: average as sum / count, computed by two collectors at once. */
     static double average(List<Order> orders) {
         return orders.stream().collect(Collectors.teeing(
                 Collectors.summingDouble(Order::amount),
@@ -40,12 +36,8 @@ public class TeeingCollectorExample {
                 (sum, count) -> count == 0 ? 0.0 : sum / count));
     }
 
-    // ---------- 2. teeing nested in teeing, for more than two results ----------
+    // ---------- 2. teeing w teeing, gdy wyników jest więcej niż dwa ----------
 
-    /**
-     * teeing only takes two downstreams, so three or more aggregates means
-     * nesting: (count, total) on one side, the min/max range on the other.
-     */
     static Summary summarize(List<Order> orders) {
         return orders.stream().collect(Collectors.teeing(
                 Collectors.teeing(
@@ -65,9 +57,8 @@ public class TeeingCollectorExample {
                 }));
     }
 
-    // ---------- 3. two different *filters* over the same stream ----------
+    // ---------- 3. dwa różne filtry na tym samym strumieniu ----------
 
-    /** Splits on a threshold: the big spenders' names and how much the rest paid. */
     static String splitOnThreshold(List<Order> orders, double threshold) {
         return orders.stream().collect(Collectors.teeing(
                 Collectors.filtering(o -> o.amount() >= threshold,
@@ -77,19 +68,18 @@ public class TeeingCollectorExample {
                 (big, restTotal) -> big + " >= " + threshold + ", rest paid " + restTotal));
     }
 
-    // ---------- 4. it works on an infinite/lazy source too ----------
+    // ---------- 4. działa też na nieskończonym, leniwym źródle ----------
 
-    /** First and last of a generated stream — no intermediate list involved. */
     static Range firstAndLastOfSquares(int n) {
         return Stream.iterate(1, i -> i + 1).limit(n)
                 .map(i -> (double) i * i)
                 .collect(Collectors.teeing(
-                        Collectors.reducing((first, next) -> first),   // keep the first
-                        Collectors.reducing((prev, next) -> next),     // keep the last
+                        Collectors.reducing((first, next) -> first),   // zachowaj pierwszy
+                        Collectors.reducing((prev, next) -> next),     // zachowaj ostatni
                         (first, last) -> new Range(first.orElse(0.0), last.orElse(0.0))));
     }
 
-    // ---------- tests ----------
+    // ---------- testy ----------
 
     private static int passed = 0;
     private static int failed = 0;
@@ -97,10 +87,10 @@ public class TeeingCollectorExample {
     private static void check(String name, Object expected, Object actual) {
         if (expected.equals(actual)) {
             passed++;
-            System.out.printf("PASS  %-28s -> %s%n", name, actual);
+            IO.println("PASS  %-28s -> %s".formatted(name, actual));
         } else {
             failed++;
-            System.out.printf("FAIL  %-28s -> %s (expected %s)%n", name, actual, expected);
+            IO.println("FAIL  %-28s -> %s (expected %s)".formatted(name, actual, expected));
         }
     }
 
@@ -110,7 +100,7 @@ public class TeeingCollectorExample {
             new Order("grace",  "books",   50.0),
             new Order("ada",    "tools",   10.0));
 
-    public static void main(String[] args) {
+    void main() {
         check("min/max",            new Range(10.0, 50.0), minMax(ORDERS));
         check("spread",             40.0,                  minMax(ORDERS).spread());
         check("average",            25.0,                  average(ORDERS));
@@ -130,12 +120,12 @@ public class TeeingCollectorExample {
         check("first/last squares",  new Range(1.0, 25.0),  firstAndLastOfSquares(5));
         check("single element",      new Range(1.0, 1.0),   firstAndLastOfSquares(1));
 
-        // min/max on an empty list: both Optionals are empty, the merger decides
+        // min/max na pustej liście: oba Optionale są puste, o wyniku decyduje funkcja łącząca
         check("min/max of empty",
                 new Range(Double.NaN, Double.NaN).toString(),
                 minMax(List.of()).toString());
 
-        // teeing composes with groupingBy like any other collector
+        // teeing łączy się z groupingBy jak każdy inny kolektor
         var perCategory = ORDERS.stream().collect(Collectors.groupingBy(
                 Order::category,
                 Collectors.teeing(
@@ -145,6 +135,6 @@ public class TeeingCollectorExample {
         check("grouped teeing books", "2 orders, 80.0", perCategory.get("books"));
         check("grouped teeing tools", "2 orders, 20.0", perCategory.get("tools"));
 
-        System.out.printf("%n%d passed, %d failed%n", passed, failed);
+        IO.println("%n%d passed, %d failed".formatted(passed, failed));
     }
 }

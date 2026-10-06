@@ -1,62 +1,61 @@
-# Left Rotation — one index map, and why the fewest writes lose
+# Left Rotation: jedna mapa indeksów i dlaczego najmniej zapisów przegrywa
 
-Notes for [`src/java/array/LeftRotation.java`](../../src/java/array/LeftRotation.java),
-tested by [`test/java/array/LeftRotationTest.java`](../../test/java/array/LeftRotationTest.java).
+Notatka do [`src/java/array/LeftRotation.java`](../../src/java/array/LeftRotation.java),
+testy: [`test/java/array/LeftRotationTest.java`](../../test/java/array/LeftRotationTest.java).
 
-**Problem** Given `int a[n]` and `d`, perform `d` left rotations on `a`. Sample: `[1,2,3,4,5]`
-with `d = 4` → `[5,1,2,3,4]`. Constraints `1 ≤ n ≤ 10⁵`, `1 ≤ d ≤ n`.
+**Zadanie.** Dane są `int a[n]` i `d`; wykonaj `d` obrotów `a` w lewo. Przykład: `[1,2,3,4,5]` z
+`d = 4` → `[5,1,2,3,4]`. Ograniczenia: `1 ≤ n ≤ 10⁵`, `1 ≤ d ≤ n`.
 
-## The trap is in the wording
+## Pułapka jest w sformułowaniu
 
-"Perform `d` left rotations" describes a loop, and written as one it costs O(n·d). At the problem's
-own upper bound that is 10¹⁰ element moves. Measured, `n = d = 100 000`:
+„Wykonaj `d` obrotów w lewo” opisuje pętlę, a zapisane jako pętla kosztuje O(n·d). Przy górnej
+granicy zadania to 10¹⁰ przesunięć elementów. Zmierzone dla `n = d = 100 000`:
 
-| Approach | Time |
+| Podejście | Czas |
 |---|---:|
-| `d` rotations of one position each | 683 ms |
-| One index map (`rotLeft`) | 68 µs |
+| `d` obrotów o jedną pozycję | 683 ms |
+| Jedna mapa indeksów (`rotLeft`) | 68 µs |
 
-**~10 000×**, and the gap is quadratic — it widens with every extra element. But the composition of
-`d` single rotations is not a loop at all. It is one relabelling:
+**Około 10 000 razy**, a różnica jest kwadratowa: rośnie z każdym elementem. Złożenie `d`
+pojedynczych obrotów to jednak wcale nie pętla, tylko jedno przenumerowanie:
 
 ```
 rotated[i] = a[(i + d) mod n]
 ```
 
-Each element has exactly one destination, known in closed form, so nothing needs to be touched
-twice and no rotation can cost more than O(n). Everything below is that single formula, evaluated
-in a different order.
+Każdy element ma dokładnie jedno miejsce docelowe, znane w postaci zamkniętej, więc niczego nie
+trzeba ruszać dwa razy i żaden obrót nie musi kosztować więcej niż O(n). Wszystko dalej to ten
+jeden wzór, liczony w innej kolejności.
 
-## Normalising d
+## Normalizacja d
 
-The formula only needs `d mod n`, which is why `Math.floorMod(d, n)` buys three cases the problem
-never asks for, for free:
+Wzór potrzebuje tylko `d mod n`, dlatego `Math.floorMod(d, n)` daje za darmo trzy przypadki, o które
+zadanie nie pyta:
 
-| `d` | `floorMod(d, n)` | meaning |
+| `d` | `floorMod(d, n)` | znaczenie |
 |---|---|---|
-| `0` or `n` | `0` | identity |
-| `> n` | wraps | `d = 17, n = 5` → shift 2 |
-| **negative** | wraps the other way | **a right rotation** |
+| `0` albo `n` | `0` | nic się nie zmienia |
+| `> n` | zawija się | `d = 17, n = 5` → przesunięcie 2 |
+| **ujemne** | zawija się w drugą stronę | **obrót w prawo** |
 
-`Integer.MIN_VALUE` is included, and it is the value that catches hand-rolled normalisation:
-`-d` overflows back to `Integer.MIN_VALUE`. The test's `Collections.rotate` oracle has to normalise
-*before* negating for exactly that reason. Only `n = 0` is special-cased, because `floorMod(d, 0)`
-throws: there is no modulus to reduce by.
+`Integer.MIN_VALUE` też się mieści, a to wartość, na której wykłada się ręczna normalizacja: `-d`
+przepełnia się z powrotem do `Integer.MIN_VALUE`. Dlatego wzorzec z `Collections.rotate` w testach
+musi normalizować _przed_ zmianą znaku. Osobno obsługiwane jest tylko `n = 0`, bo `floorMod(d, 0)`
+rzuca wyjątek: nie ma modułu, przez który można by dzielić.
 
-## Three evaluation orders
+## Trzy kolejności liczenia
 
-| | Extra space | Element writes | Access pattern |
+| | Dodatkowa pamięć | Zapisy elementów | Dostęp do pamięci |
 |---|---|---|---|
-| `rotLeft` (copy) | O(n) | n | two sequential blocks |
-| `rotateLeftInPlace` (3 reversals) | **O(1)** | ~2n | sequential |
-| `rotateLeftInPlaceByCycles` (juggling) | **O(1)** | **n** | strided by `d` |
+| `rotLeft` (kopia) | O(n) | n | dwa ciągłe bloki |
+| `rotateLeftInPlace` (3 odwrócenia) | **O(1)** | ~2n | sekwencyjny |
+| `rotateLeftInPlaceByCycles` (żonglowanie) | **O(1)** | **n** | skoki co `d` |
 
-**Copy.** `rotated[i] = a[(i + d) mod n]` says the tail `a[d..n)` lands at the front and the head
-`a[0..d)` follows it — two contiguous blocks, so two `System.arraycopy` calls, not n modulo
-operations.
+**Kopia.** `rotated[i] = a[(i + d) mod n]` mówi, że ogon `a[d..n)` trafia na początek, a głowa
+`a[0..d)` za nim: dwa ciągłe bloki, więc dwa wywołania `System.arraycopy`, a nie n operacji modulo.
 
-**Three reversals.** A left rotation emits `tail ++ head`. Reversing each part and then the whole
-array performs that concatenation swap in place, because reversing a reversed block restores it:
+**Trzy odwrócenia.** Obrót w lewo daje `ogon ++ głowa`. Odwrócenie każdej części, a potem całej
+tablicy wykonuje tę zamianę w miejscu, bo odwrócenie odwróconego bloku go przywraca:
 
 ```
 [1 2 3 4 5]  d = 4
@@ -65,22 +64,23 @@ array performs that concatenation swap in place, because reversing a reversed bl
  reverse(0,5)   [5 | 1 2 3 4]
 ```
 
-**Cycles (juggling).** `i → (i + d) mod n` is a permutation, so carry each element straight to its
-destination: hold one, pull its replacement from `d` slots along, repeat until the walk closes,
-drop the held value in the hole. There are exactly **`gcd(n, d)` cycles** of length `n / gcd(n, d)`
-— the step `+d` first returns to its start after `lcm(n, d)` steps — which is why one walk is not
-always enough. With `n` and `d` coprime a single cycle covers everything, and **that is the case the
-HackerRank sample happens to be** (`n = 5, d = 4`), so a version that never restarts the walk still
-passes it. `n = 4, d = 2` is the smallest case that catches it: a walk that never restarts leaves
-`[1,2,3,4]` as `[3,2,1,4]` instead of `[3,4,1,2]`.
+**Cykle (żonglowanie).** `i → (i + d) mod n` jest permutacją, więc każdy element można zanieść
+prosto na miejsce: trzymaj jeden, ściągnij jego następcę z pola o `d` dalej, powtarzaj, aż
+przejście się domknie, wstaw trzymaną wartość w dziurę. Cykli jest dokładnie **`gcd(n, d)`**, każdy
+długości `n / gcd(n, d)` (krok `+d` pierwszy raz wraca na start po `lcm(n, d)` krokach), dlatego
+jedno przejście nie zawsze wystarcza. Gdy `n` i `d` są względnie pierwsze, jeden cykl obejmuje
+wszystko, i **akurat taki jest przykład z HackerRank** (`n = 5, d = 4`), więc wersja, która nigdy
+nie zaczyna przejścia od nowa, i tak go przechodzi. Najmniejszy przypadek, który to łapie, to
+`n = 4, d = 2`: przejście bez ponownego startu zostawia `[1,2,3,4]` jako `[3,2,1,4]` zamiast
+`[3,4,1,2]`.
 
-## The fewest writes is not the fastest
+## Najmniej zapisów to nie najszybciej
 
-The cycle walk writes every element exactly once — the provable minimum, half what the reversals
-do. It is also the one to avoid. Measured ad hoc, `n = 50 000 000` ints (200 MB), best of 3,
-JDK 25.0.1 (Temurin), Intel i7-14650HX (L2 24 MB, L3 30 MB):
+Przejście po cyklach zapisuje każdy element dokładnie raz: to udowodnione minimum, połowa tego, co
+robią odwrócenia. I właśnie jego należy unikać. Zmierzone doraźnie, `n = 50 000 000` intów
+(200 MB), najlepszy z 3 pomiarów, JDK 25.0.1 (Temurin), Intel i7-14650HX (L2 24 MB, L3 30 MB):
 
-| `d` | power of 2 | 3 reversals | cycle walk | ratio |
+| `d` | potęga 2 | 3 odwrócenia | cykle | stosunek |
 |---:|:---:|---:|---:|---:|
 | 1 | ✓ | 0.50 ns/el | 0.44 ns/el | 0.9× |
 | 3 | | 0.52 | 0.78 | 1.5× |
@@ -96,90 +96,92 @@ JDK 25.0.1 (Temurin), Intel i7-14650HX (L2 24 MB, L3 30 MB):
 | 3 333 333 | | 0.51 | 0.63 | 1.2× |
 | 25 000 000 | | 0.51 | 0.52 | 1.0× |
 
-Two columns, one array, the same instruction count. **The reversals are flat — 0.50–0.52 ns/element
-across seven orders of magnitude of `d`. The cycle walk spans 0.44 to 28.88, a 65× spread driven by
-nothing but the value of `d`.**
+Dwie kolumny, jedna tablica, ta sama liczba instrukcji. **Odwrócenia są płaskie: 0.50–0.52 ns na
+element przez siedem rzędów wielkości `d`. Cykle rozciągają się od 0.44 do 28.88, czyli 65 razy,
+a decyduje o tym tylko wartość `d`.**
 
-Where the spread comes from, in three regimes:
+Skąd ten rozrzut, w trzech zakresach:
 
-- **`d` below a cache line (16 ints).** The walk wraps the address range `d` times, and with a
-  stride under 64 bytes each wrap touches every cache line — so it reloads the whole array `d`
-  times. Cost tracks `d/2`: `d = 7` → 3.2×, `d = 15` → 6.4×.
-- **Powers of two.** `1 024`, `65 536` and `1 048 576` cost 22×, 47× and 56×, while their immediate
-  neighbours `1 000` and `70 000` cost 3.2× and 2.1×. A power-of-two stride maps every access onto
-  the same cache sets; the neighbours do not. This is the sharpest effect in the table and it is
-  invisible in the write count.
-- **`d` large enough that `n/d` is small.** The walk becomes a handful of sequential streams the
-  prefetcher follows, and it returns to parity: `d = 25 000 000` is 1.0×.
+- **`d` mniejsze niż linia pamięci podręcznej (16 intów).** Przejście okrąża zakres adresów `d`
+  razy, a przy skoku poniżej 64 bajtów każde okrążenie dotyka każdej linii, więc cała tablica jest
+  wczytywana `d` razy. Koszt rośnie jak `d/2`: `d = 7` → 3.2×, `d = 15` → 6.4×.
+- **Potęgi dwójki.** `1 024`, `65 536` i `1 048 576` kosztują 22×, 47× i 56×, a ich bezpośredni
+  sąsiedzi `1 000` i `70 000` 3.2× i 2.1×. Skok o potęgę dwójki trafia każdym dostępem w te same
+  zbiory (sets) pamięci podręcznej; sąsiedzi nie. To najostrzejszy efekt w tabeli i zupełnie
+  niewidoczny w liczbie zapisów.
+- **`d` na tyle duże, że `n/d` jest małe.** Przejście staje się kilkoma sekwencyjnymi strumieniami,
+  za którymi nadąża prefetcher, i wraca do remisu: `d = 25 000 000` to 1.0×.
 
-Three buckets is less of a model than it looks: the other mid-range values land anywhere between
-2.1× (`70 000`) and 13.4× (`12 345`), and `d = 100` costs 8.9× while `d = 1 000` costs 3.2×. The
-cache geometry is messier than any rule of thumb worth writing down. What survives is the shape of
-the table, not a formula: the reversals are flat and the walk is not.
+Trzy zakresy to mniej model, niż się wydaje: pozostałe średnie wartości lądują gdziekolwiek między
+2.1× (`70 000`) a 13.4× (`12 345`), a `d = 100` kosztuje 8.9×, podczas gdy `d = 1 000` 3.2×.
+Geometria pamięci podręcznej jest bardziej zawiła niż jakakolwiek reguła warta zapisania. Zostaje
+kształt tabeli, a nie wzór: odwrócenia są płaskie, cykle nie.
 
-This is *not* a `gcd` effect — `d = 25 000 000` runs 25 million cycles of length 2 and is the
-fastest row in the table. It is a cache effect, and the spikiness is what says so: a TLB cost would
-rise smoothly with stride, not jump 7× between `1 000` and `1 024` and back down at `1 050`. (The
-TLB was not isolated outright — this machine has THP set to `[always]`, so
-`-XX:+UseTransparentHugePages` is a no-op here and turning THP off needs root.) Shrinking the array
-does shrink the penalty, which is the more direct evidence — the same
-`d = 65 536` costs 46× at 200 MB, 24× at 32 MB, 15× at 8 MB and 1.0× at 1 MB, where the array fits
-in L2 and the strides stop mattering.
+To _nie_ jest efekt `gcd`: `d = 25 000 000` obsługuje 25 milionów cykli długości 2 i jest
+najszybszym wierszem tabeli. To efekt pamięci podręcznej i mówi o tym właśnie ta nieregularność:
+koszt TLB rósłby gładko ze skokiem, a nie skakał 7 razy między `1 000` a `1 024` i spadał z powrotem
+przy `1 050`. (TLB nie został wyizolowany wprost: ta maszyna ma THP ustawione na `[always]`, więc
+`-XX:+UseTransparentHugePages` niczego tu nie zmienia, a wyłączenie THP wymaga roota.) Zmniejszenie
+tablicy zmniejsza karę, co jest bardziej bezpośrednim dowodem: to samo `d = 65 536` kosztuje 46×
+przy 200 MB, 24× przy 32 MB, 15× przy 8 MB i 1.0× przy 1 MB, gdzie tablica mieści się w L2, a skoki
+przestają mieć znaczenie.
 
-**So: ship the reversals.** They cost 2n writes instead of n and win by up to 56× because of *where*
-they write. The cycle walk is worth knowing as the proof that n writes suffice, and worth reaching
-for only when `d` is known and small.
+**Wniosek: wybierz odwrócenia.** Kosztują 2n zapisów zamiast n i wygrywają nawet 56 razy przez to,
+_gdzie_ piszą. Przejście po cyklach warto znać jako dowód, że n zapisów wystarcza, a sięgać po nie
+tylko wtedy, gdy `d` jest znane i małe.
 
-## What the JDK does, and why it is not a counter-example
+## Co robi JDK i dlaczego to nie kontrprzykład
 
-`Collections.rotate` picks between exactly these last two:
+`Collections.rotate` wybiera dokładnie między dwoma ostatnimi:
 
 ```java
 if (list instanceof RandomAccess || list.size() < ROTATE_THRESHOLD)   // 100
-    rotate1(list, distance);   // the cycle walk
+    rotate1(list, distance);   // przejście po cyklach
 else
-    rotate2(list, distance);   // the three reversals
+    rotate2(list, distance);   // trzy odwrócenia
 ```
 
-It gives the cycle walk to array-backed lists — seemingly the opposite of the conclusion above. It
-is not, because it is answering a different question: `rotate2` reverses via `subList` and
-`ListIterator`, which a `LinkedList` walks cheaply but an indexed `get`/`set` walk would make
-O(n²). The choice is about **access cost**, not cache. For a primitive `int[]`, where indexing is
-free and the array is bigger than L3, the trade-off inverts.
+Listom opartym na tablicy daje przejście po cyklach, czyli pozornie odwrotnie niż wniosek wyżej. To
+nie sprzeczność, bo odpowiada na inne pytanie: `rotate2` odwraca przez `subList` i `ListIterator`,
+które `LinkedList` przechodzi tanio, ale przejście przez `get`/`set` z indeksem byłoby O(n²).
+Wybór dotyczy **kosztu dostępu**, a nie pamięci podręcznej. Dla `int[]`, gdzie indeksowanie jest
+darmowe, a tablica większa niż L3, kompromis się odwraca.
 
-Also note the **sign**: `Collections.rotate(list, d)` rotates *right*. A left rotation by `d` is
-`rotate(list, -d)`, which the test uses as one of its oracles.
+Uwaga też na **znak**: `Collections.rotate(list, d)` obraca w _prawo_. Obrót w lewo o `d` to
+`rotate(list, -d)`, i tak test używa go jako jednego ze wzorców.
 
-## Rotation as a non-operation
+## Obrót jako brak operacji
 
-The formula `rotated[i] = a[(i + d) mod n]` never actually required moving anything. If the caller
-only reads, a rotation is a change of address arithmetic and costs O(1) — which is precisely what a
-ring buffer is, and why `ArrayDeque` rotates by moving a head index. Moving elements is the price
-of keeping the result a plain `int[]` whose index 0 is where the language says it is.
+Wzór `rotated[i] = a[(i + d) mod n]` nigdy nie wymagał przesuwania czegokolwiek. Jeśli wywołujący
+tylko czyta, obrót to zmiana arytmetyki adresów i kosztuje O(1): dokładnie tym jest bufor
+cykliczny i dlatego `ArrayDeque` obraca się przez przesunięcie indeksu początku. Przesuwanie
+elementów to cena za to, żeby wynik był zwykłym `int[]`, którego indeks 0 jest tam, gdzie mówi
+język.
 
-## Test oracles
+## Wzorce w testach
 
-Nothing rests on the implementation being its own witness:
+Nic nie opiera się na tym, że implementacja świadczy sama za siebie:
 
-| Oracle | Scale | Catches |
+| Wzorzec | Skala | Co łapie |
 |---|---|---|
-| Hand-written expected arrays | 20 cases incl. `gcd > 1`, negative `d`, `MIN_VALUE` | a wrong index map |
-| Repeated single rotations | **every** `(n, d)` for `n ≤ 40`, `abs(d) ≤ 2n+3` | a wrong cycle count |
-| `Collections.rotate` | 500 random arrays | a sign or off-by-one error |
-| `rotated[i] == (i + d) mod n` | 10⁷ elements | overflow, and scale |
+| Ręcznie zapisane oczekiwane tablice | 20 przypadków, w tym `gcd > 1`, ujemne `d`, `MIN_VALUE` | złą mapę indeksów |
+| Powtarzane pojedyncze obroty | **każde** `(n, d)` dla `n ≤ 40`, `abs(d) ≤ 2n+3` | złą liczbę cykli |
+| `Collections.rotate` | 500 losowych tablic | błąd znaku albo o jeden |
+| `rotated[i] == (i + d) mod n` | 10⁷ elementów | przepełnienie i skalę |
 
-The exhaustive pass is the load-bearing one: `gcd(n, d) > 1` is a minority of pairs, and a cycle
-walk that never restarts passes every sample that misses them.
+Kluczowe jest przejście wyczerpujące: `gcd(n, d) > 1` to mniejszość par, a przejście po cyklach bez
+ponownego startu przechodzi każdy przykład, który je omija.
 
-Mutation-checked — eleven deliberate breaks, nine caught: `cycles = 1` → 8 failures, dropping the
-wrap-around subtraction → 20 errors, reversing the whole array first → 15, raw `d % n` instead of
-`floorMod` → 5 errors, returning the input when `shift == 0` → 1, rotating right → 16, breaking
-Euclid's swap → 19, either reversal range off by one → 16 and 19. The two survivors are equivalent
-mutants, not gaps: deleting `if (shift == 0) return` still leaves `reverse(0,0)` plus two full
-reversals, which is the identity, and `hole == start` only ever holds on a walk's first step.
+Sprawdzone mutacjami: jedenaście celowych uszkodzeń, dziewięć złapanych. `cycles = 1` → 8 błędów,
+usunięcie odejmowania przy zawijaniu → 20, odwrócenie całej tablicy najpierw → 15, surowe `d % n`
+zamiast `floorMod` → 5, zwrócenie wejścia przy `shift == 0` → 1, obrót w prawo → 16, zepsucie
+zamiany w algorytmie Euklidesa → 19, zakres któregoś odwrócenia przesunięty o jeden → 16 i 19. Dwa
+ocalałe to mutanty równoważne, a nie luki: usunięcie `if (shift == 0) return` zostawia
+`reverse(0,0)` i dwa pełne odwrócenia, czyli tożsamość, a `hole == start` zachodzi tylko w
+pierwszym kroku przejścia.
 
 ```
-mvn test -Dtest=LeftRotationTest        # 28 tests, ~0.2 s
+mvn test -Dtest=LeftRotationTest        # 28 testów, ~0.2 s
 ```
 
-Measurements above were taken ad hoc with a throwaway harness, not by the build.
+Powyższe pomiary zrobiono doraźnie jednorazowym programem, a nie w ramach budowania.

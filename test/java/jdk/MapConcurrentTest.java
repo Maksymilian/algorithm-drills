@@ -28,15 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/**
- * These tests pin down the {@code Gatherers.mapConcurrent} behaviour the notes rely on — the exact
- * bound, encounter order, bounded read-ahead, encounter-ordered failure, and short-circuiting that
- * does not drain the window. None of that is this repository's code, so a failure here means the
- * JDK changed (or the notes were wrong), which is precisely why the checks are worth keeping.
- *
- * <p>Where the claim allows it the test is a latch, not a stopwatch: "the failure has not surfaced
- * yet" is asserted by a thread still being blocked, not by a duration.
- */
 class MapConcurrentTest {
 
     @ParameterizedTest(name = "window of {0}")
@@ -63,11 +54,7 @@ class MapConcurrentTest {
     @Test
     @Timeout(60)
     void theBoundIsNotTheCoreCount() {
-        // 500 blocking calls in flight on a machine with far fewer cores: the whole reason
-        // mapConcurrent uses virtual threads rather than a pool sized to the CPU
         int window = 500;
-        // on a machine with 125+ cores the comparison stops being interesting; the bound itself
-        // still holds, but this test has nothing left to say, so it steps aside rather than fails
         assumeTrue(window > 4 * Runtime.getRuntime().availableProcessors(),
                 "this box has too many cores for the test to mean anything");
 
@@ -109,13 +96,10 @@ class MapConcurrentTest {
                 () -> Stream.of(1).gather(Gatherers.mapConcurrent(window, i -> i)).toList());
     }
 
-    // ---------- order ----------
-
     @Test
     @Timeout(60)
     void resultsKeepEncounterOrderWhenWorkFinishesBackwards() {
         int n = 16;
-        // element 0 is the slowest, so completion order is exactly the reverse of encounter order
         List<Integer> out = IntStream.range(0, n).boxed()
                 .gather(Gatherers.mapConcurrent(n, i -> {
                     sleep(5 * (n - i));
@@ -129,14 +113,11 @@ class MapConcurrentTest {
     @Test
     @Timeout(60)
     void nullResultsPassThrough() {
-        // worth pinning: a null from the mapper is not an error, it is a value
         List<Integer> out = Stream.of(1, 2, 3)
                 .gather(Gatherers.mapConcurrent(2, i -> i == 2 ? null : i))
                 .toList();
         assertEquals(Arrays.asList(1, null, 3), out);
     }
-
-    // ---------- laziness and back-pressure ----------
 
     @Test
     @Timeout(60)
@@ -151,8 +132,8 @@ class MapConcurrentTest {
                 }))
                 .iterator();
 
-        it.next();                                           // consume exactly one element
-        sleep(500);                                          // ...and then stall
+        it.next();
+        sleep(500);
 
         assertEquals(window, mapped.get(),
                 "a stalled consumer must stall the producer, one window ahead");
@@ -161,10 +142,6 @@ class MapConcurrentTest {
     @Test
     @Timeout(60)
     void readAheadStaysWithinTheWindowForTheWholeStream() {
-        // the test above watches only the first window. This one walks every element and checks the
-        // bound at each step. Note what the bound is NOT: refilling happens in lumps, so mapped
-        // sits at 5, 5, 5, 5, 5, 10, 11, 11... rather than tracking consumed + window one for one.
-        // Only the inequality holds everywhere.
         int window = 5;
         int elements = 2_000;
         AtomicInteger mapped = new AtomicInteger();
@@ -208,8 +185,6 @@ class MapConcurrentTest {
                 "generated " + generated.get() + ", which is more than take + window");
     }
 
-    // ---------- failure ----------
-
     @Test
     @Timeout(60)
     void theMappersExceptionArrivesUnwrapped() {
@@ -243,7 +218,7 @@ class MapConcurrentTest {
                 thrown.set(t);
             }
         });
-        pipeline.setDaemon(true);                        // see EqualShareSemaphoreTest: never hang CI
+        pipeline.setDaemon(true);
         pipeline.start();
 
         Thread.sleep(200);
@@ -274,13 +249,9 @@ class MapConcurrentTest {
         assertTrue(mapped.get() < 30, "element 30 should never have been reached, ran " + mapped.get());
     }
 
-    // ---------- short-circuit ----------
-
     @Test
     @Timeout(60)
     void shortCircuitingDoesNotWaitForTheWindowToDrain() throws Exception {
-        // every element but the first parks forever; findFirst must still return. If it drained
-        // the window instead, this test would hang and the @Timeout would fail it.
         CountDownLatch release = new CountDownLatch(1);
         AtomicInteger started = new AtomicInteger();
         try {
@@ -297,11 +268,9 @@ class MapConcurrentTest {
             assertTrue(started.get() > 1, "the window should have been filled ahead of the consumer");
             assertEquals(1, release.getCount(), "the stragglers were still parked, not awaited");
         } finally {
-            release.countDown();                             // let the abandoned mappers exit
+            release.countDown();
         }
     }
-
-    // ---------- the window bounds the pipeline; the gate bounds a tenant ----------
 
     @Test
     @Timeout(value = 60, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
@@ -312,8 +281,6 @@ class MapConcurrentTest {
             assertEquals(3, peak, "each tenant is held to its share of 12/4, inside a window of 40");
         }
 
-        // the control: with a gate too wide to bind, the same pipeline runs to the window —
-        // without this, [3, 3, 3, 3] would also be consistent with the window doing the work
         int[] ungated = perTenantPeaks(new EqualShareSemaphore(400, 4), 4, 40);
         for (int peak : ungated) {
             assertTrue(peak > 3, "the window should bound this, not the gate: " + Arrays.toString(ungated));
@@ -322,10 +289,8 @@ class MapConcurrentTest {
     }
 
     @Test
-    @Timeout(value = 60, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)   // see above
+    @Timeout(value = 60, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void theGateHoldsUpUnderManyVirtualThreads() {
-        // the gate parks virtual threads on a ReentrantLock/Condition, which is what makes it
-        // usable inside a mapper at all; this drives far more of them than there are carriers
         EqualShareSemaphore gate = new EqualShareSemaphore(8, 2);
         AtomicInteger inFlight = new AtomicInteger();
         AtomicInteger peak = new AtomicInteger();
@@ -367,9 +332,9 @@ class MapConcurrentTest {
             final int tenant = t;
             Thread driver = Thread.ofVirtual().start(() ->
                     IntStream.range(0, itemsEach).boxed()
-                            .gather(Gatherers.mapConcurrent(itemsEach, i -> {   // no bound here
+                            .gather(Gatherers.mapConcurrent(itemsEach, i -> {
                                 EqualShareSemaphore.Ticket permit = acquire(gate, tenant);
-                                try (permit) {                                  // the bound is here
+                                try (permit) {
                                     peak[tenant].accumulateAndGet(
                                             inFlight[tenant].incrementAndGet(), Math::max);
                                     sleep(2);

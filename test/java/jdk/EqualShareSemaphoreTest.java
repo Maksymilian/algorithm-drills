@@ -25,20 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * The claim under test is one sentence: <em>a party holding fewer than {@code share} permits is
- * never made to wait, whatever the other parties do</em> — and the total is never exceeded.
- *
- * <p>Three oracles at three scales, so nothing rests on the implementation being its own witness:
- * an exhaustive walk of the state space for small configurations, deterministic scenarios for the
- * documented behaviours, and a randomised concurrent stress that checks the same invariants under
- * real contention.
- */
 class EqualShareSemaphoreTest {
 
-    private static final long NOW = 0L;   // tryAcquire with no patience at all
-
-    // ---------- the split ----------
+    private static final long NOW = 0L;
 
     static Stream<Arguments> configurations() {
         return Stream.of(
@@ -60,14 +49,12 @@ class EqualShareSemaphoreTest {
         assertEquals(share + surplus, gate.maxPerParty());
         assertEquals(total, gate.totalPermits());
         assertEquals(parties, gate.parties());
-        // the partition is exact, and the remainder is smaller than one permit each
         assertEquals(total, parties * gate.guaranteedShare() + gate.surplus());
         assertTrue(gate.surplus() < parties, "surplus must be the remainder, not a second share");
     }
 
     @Test
     void rejectsConfigurationsItCannotGuarantee() {
-        // fewer permits than parties means someone's share would be zero — no guarantee to give
         assertThrows(IllegalArgumentException.class, () -> new EqualShareSemaphore(2, 3));
         assertThrows(IllegalArgumentException.class, () -> new EqualShareSemaphore(0, 1));
         assertThrows(IllegalArgumentException.class, () -> new EqualShareSemaphore(10, 0));
@@ -84,8 +71,6 @@ class EqualShareSemaphoreTest {
         assertEquals(0, gate.totalHeld(), "a rejected call must not have taken a permit");
     }
 
-    // ---------- oracle 1: every reachable state, exhaustively ----------
-
     static Stream<Arguments> smallConfigurations() {
         return Stream.of(
                 Arguments.of(4, 2), Arguments.of(5, 2), Arguments.of(6, 3),
@@ -93,12 +78,6 @@ class EqualShareSemaphoreTest {
                 Arguments.of(12, 5));
     }
 
-    /**
-     * Walks every legal holding vector for a small configuration, puts the gate into that exact
-     * state, and checks the guarantee there. "Legal" is defined independently of the admission
-     * rules — no party over {@code share + surplus}, and no more than {@code surplus} permits
-     * borrowed in total — so this is a check against the specification, not against the code.
-     */
     @ParameterizedTest(name = "{0} permits / {1} parties")
     @MethodSource("smallConfigurations")
     void everyReachableStateKeepsTheGuarantee(int total, int parties) throws InterruptedException {
@@ -112,7 +91,6 @@ class EqualShareSemaphoreTest {
                 EqualShareSemaphore gate = new EqualShareSemaphore(total, parties);
                 List<Ticket> held = new ArrayList<>();
 
-                // building the state must itself never block, in either order
                 for (int step = 0; step < parties; step++) {
                     int party = reverseOrder ? parties - 1 - step : step;
                     for (int i = 0; i < holdings[party]; i++) {
@@ -130,14 +108,13 @@ class EqualShareSemaphoreTest {
                 for (int p = 0; p < parties; p++) {
                     Ticket extra = gate.tryAcquire(p, NOW, TimeUnit.MILLISECONDS);
                     if (holdings[p] < share) {
-                        // THE guarantee: below its share, a party is never refused
                         assertNotNull(extra, "party below its share was refused in state "
                                 + java.util.Arrays.toString(holdings));
                     } else if (holdings[p] == share + surplus || sum == total) {
                         assertNull(extra, "party at its cap was admitted in state "
                                 + java.util.Arrays.toString(holdings));
                     }
-                    if (extra != null) extra.close();        // restore the state for the next party
+                    if (extra != null) extra.close();
                 }
 
                 held.forEach(Ticket::close);
@@ -150,7 +127,6 @@ class EqualShareSemaphoreTest {
         assertTrue(states > 0, "the enumeration produced no states");
     }
 
-    /** Every vector that the specification says must be holdable at once. */
     private static List<int[]> legalHoldings(int parties, int share, int surplus) {
         List<int[]> out = new ArrayList<>();
         build(new int[parties], 0, share, surplus, out);
@@ -171,15 +147,12 @@ class EqualShareSemaphoreTest {
         current[index] = 0;
     }
 
-    // ---------- oracle 2: the documented scenarios, deterministically ----------
-
     @Test
     void oneGreedyPartyCannotStarveTheOthers() throws InterruptedException {
         EqualShareSemaphore gate = new EqualShareSemaphore(10, 3);
         List<Ticket> greedy = drain(gate, 0);
         assertEquals(4, greedy.size(), "share 3 + the whole surplus of 1");
 
-        // the point of the class: the other two still get their full share, without waiting
         List<Ticket> others = new ArrayList<>();
         others.addAll(drain(gate, 1));
         others.addAll(drain(gate, 2));
@@ -195,7 +168,6 @@ class EqualShareSemaphoreTest {
 
     @Test
     void capacityIsFullyRestored() throws InterruptedException {
-        // a leak in the surplus accounting only shows up on a second pass through the permits
         EqualShareSemaphore gate = new EqualShareSemaphore(10, 3);
         for (int round = 0; round < 3; round++) {
             List<Ticket> tickets = drain(gate, round % 3);
@@ -210,14 +182,13 @@ class EqualShareSemaphoreTest {
         EqualShareSemaphore gate = new EqualShareSemaphore(3, 3);
         Ticket ticket = gate.acquire(0);
         ticket.close();
-        ticket.close();                                      // a retry, a finally, a stray copy
+        ticket.close();
         assertEquals(0, gate.totalHeld());
         assertEquals(3, drainAll(gate).size(), "a double close must not create a permit");
     }
 
     @Test
     void aTicketCanBeReleasedByAnotherThread() throws Exception {
-        // the mapConcurrent pattern: the producer takes the permit, the worker returns it
         EqualShareSemaphore gate = new EqualShareSemaphore(2, 2);
         Ticket ticket = gate.acquire(0);
         Thread worker = new Thread(ticket::close);
@@ -226,15 +197,13 @@ class EqualShareSemaphoreTest {
         assertEquals(0, gate.totalHeld());
     }
 
-    // ---------- waiting, timing out, being interrupted ----------
-
     @Test
     @Timeout(30)
     void aSurplusWaiterIsWokenWhenTheSurplusComesBack() throws Exception {
-        EqualShareSemaphore gate = new EqualShareSemaphore(5, 2);   // share 2, surplus 1
-        List<Ticket> hog = drain(gate, 1);                          // party 1 takes 2 + the surplus
+        EqualShareSemaphore gate = new EqualShareSemaphore(5, 2);
+        List<Ticket> hog = drain(gate, 1);
         assertEquals(3, hog.size());
-        List<Ticket> mine = drain(gate, 0);                         // party 0 takes its own share
+        List<Ticket> mine = drain(gate, 0);
         assertEquals(2, mine.size());
         assertEquals(5, gate.totalHeld());
 
@@ -243,18 +212,18 @@ class EqualShareSemaphoreTest {
         Thread waiter = new Thread(() -> {
             waiting.countDown();
             try {
-                got.set(gate.acquire(0));                           // above its share: needs surplus
+                got.set(gate.acquire(0));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
-        waiter.setDaemon(true);                                     // a lost wakeup must not hang the fork
+        waiter.setDaemon(true);
         waiter.start();
         waiting.await();
-        Thread.sleep(50);                                           // let it reach the wait
+        Thread.sleep(50);
         assertTrue(waiter.isAlive(), "the surplus is held elsewhere; this must wait");
 
-        hog.get(2).close();                                         // the borrowed permit goes back
+        hog.get(2).close();
         waiter.join(TimeUnit.SECONDS.toMillis(10));
         assertNotNull(got.get(), "the returned surplus permit never reached the waiter");
 
@@ -268,10 +237,7 @@ class EqualShareSemaphoreTest {
     @Test
     @Timeout(30)
     void aPartyAtItsCapIsNotWokenByAnotherPartysRelease() throws Exception {
-        // the price of the guarantee, stated as a test: the gate is not work-conserving.
-        // With no surplus, share is also the ceiling, so permits freed by another party are
-        // reserved capacity — they are not handed to whoever asks first.
-        EqualShareSemaphore gate = new EqualShareSemaphore(4, 2);   // share 2, surplus 0
+        EqualShareSemaphore gate = new EqualShareSemaphore(4, 2);
         List<Ticket> mine = drain(gate, 0);
         List<Ticket> theirs = drain(gate, 1);
         assertEquals(2, mine.size());
@@ -282,7 +248,7 @@ class EqualShareSemaphoreTest {
         Thread waiter = new Thread(() -> {
             waiting.countDown();
             try {
-                got.set(gate.acquire(0));                           // wants a 3rd: over its cap
+                got.set(gate.acquire(0));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -291,13 +257,12 @@ class EqualShareSemaphoreTest {
         waiter.start();
         waiting.await();
 
-        theirs.forEach(Ticket::close);                              // the other party goes idle
+        theirs.forEach(Ticket::close);
         Thread.sleep(200);
         assertTrue(waiter.isAlive(), "a party over its cap must not take an idle party's share");
         assertNull(got.get());
         assertEquals(2, gate.totalHeld(), "only this party's own permits are out");
 
-        // only its own party giving a permit back can let it through
         mine.get(0).close();
         waiter.join(TimeUnit.SECONDS.toMillis(10));
         assertNotNull(got.get(), "its own release should have admitted it");
@@ -309,8 +274,8 @@ class EqualShareSemaphoreTest {
     @Test
     @Timeout(30)
     void aBlockedAcquireIsInterruptibleAndTakesNothing() throws Exception {
-        EqualShareSemaphore gate = new EqualShareSemaphore(2, 2);   // share 1, surplus 0
-        Ticket a = gate.acquire(0);                                 // party 0 is now at its cap
+        EqualShareSemaphore gate = new EqualShareSemaphore(2, 2);
+        Ticket a = gate.acquire(0);
         Ticket b = gate.acquire(1);
 
         CountDownLatch waiting = new CountDownLatch(1);
@@ -360,8 +325,8 @@ class EqualShareSemaphoreTest {
     @Test
     @Timeout(30)
     void tryAcquireSucceedsWhenTheSurplusArrivesDuringTheWait() throws Exception {
-        EqualShareSemaphore gate = new EqualShareSemaphore(5, 2);   // share 2, surplus 1
-        List<Ticket> hog = drain(gate, 1);                          // holds the surplus
+        EqualShareSemaphore gate = new EqualShareSemaphore(5, 2);
+        List<Ticket> hog = drain(gate, 1);
         List<Ticket> mine = drain(gate, 0);
 
         Thread releaser = new Thread(() -> {
@@ -371,7 +336,7 @@ class EqualShareSemaphoreTest {
                 Thread.currentThread().interrupt();
                 return;
             }
-            hog.get(2).close();                                     // hands the surplus back
+            hog.get(2).close();
         });
         releaser.setDaemon(true);
         releaser.start();
@@ -386,8 +351,6 @@ class EqualShareSemaphoreTest {
         mine.forEach(Ticket::close);
         assertEquals(0, gate.totalHeld());
     }
-
-    // ---------- oracle 3: the same invariants under real contention ----------
 
     @ParameterizedTest(name = "fairQueueing={0}")
     @ValueSource(booleans = {false, true})
@@ -404,8 +367,6 @@ class EqualShareSemaphoreTest {
         AtomicInteger acquisitions = new AtomicInteger();
         AtomicReference<Throwable> failure = new AtomicReference<>();
 
-        // daemon workers on purpose: if a bug parks one forever, the build must still fail and
-        // exit rather than hang the fork until CI kills it
         ExecutorService pool = Executors.newFixedThreadPool(parties * threadsPerParty, runnable -> {
             Thread t = new Thread(runnable);
             t.setDaemon(true);
@@ -452,14 +413,6 @@ class EqualShareSemaphoreTest {
         assertEquals(permits, drainAll(gate).size(), "the gate lost capacity under load");
     }
 
-    // ---------- helpers ----------
-
-    /**
-     * Takes everything one party can hold. The cap is asserted on every iteration rather than
-     * assumed: a helper that loops until it is refused would never return against an
-     * implementation that admits everything, and a test that hangs says much less than one
-     * that fails.
-     */
     private static List<Ticket> drain(EqualShareSemaphore gate, int party) throws InterruptedException {
         List<Ticket> out = new ArrayList<>();
         Ticket t;
@@ -472,7 +425,6 @@ class EqualShareSemaphoreTest {
         return out;
     }
 
-    /** Takes everything every party can hold, and hands it all back. */
     private static List<Ticket> drainAll(EqualShareSemaphore gate) throws InterruptedException {
         List<Ticket> out = new ArrayList<>();
         for (int party = 0; party < gate.parties(); party++) {

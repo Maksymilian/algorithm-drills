@@ -16,19 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * {@link PaddedCounters}: the layout is checked directly, because padding is invisible to a
- * correctness test — an unpadded counter gives the same totals, only more slowly.
- *
- * <p>The single-threaded tests use {@code try (Arena arena = Arena.ofConfined())}. The concurrent
- * one has to use {@link Arena#ofShared()}, and {@link #aConfinedArenaRejectsEveryOtherThread} is
- * the reason: a confined segment can only be used by the thread that created it. Every worker is
- * joined before its arena closes, since closing a shared arena under a running access makes that
- * access throw.
- */
 class PaddedCountersTest {
-
-    // ---------- the layout ----------
 
     @Test
     void eachSlotIsTwoCacheLinesWithTheValueFirst() {
@@ -56,8 +44,6 @@ class PaddedCountersTest {
             }
         }
     }
-
-    // ---------- one thread, confined arena ----------
 
     @Test
     void oneThreadsIncrementsAllLandInItsOwnStripe() {
@@ -105,8 +91,6 @@ class PaddedCountersTest {
         assertThrows(IllegalStateException.class, counters::sum);
     }
 
-    // ---------- many threads, shared arena ----------
-
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     void noIncrementIsLostAcrossThreads() throws InterruptedException {
@@ -127,7 +111,7 @@ class PaddedCountersTest {
                 }));
             }
             start.countDown();
-            for (Thread w : workers) w.join();            // before the arena closes
+            for (Thread w : workers) w.join();
 
             assertEquals((long) threads * perThread, counters.sum());
         }

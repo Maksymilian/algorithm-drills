@@ -72,8 +72,8 @@ class AbbreviationTest {
         int yesCount = 0;
 
         for (int trial = 0; trial < 5_000; trial++) {
-            String a = randomWord(random, random.nextInt(11), 8);   // mostly lowercase
-            String b = randomWord(random, random.nextInt(6), 0);    // uppercase only, as per the constraints
+            String a = randomWord(random, random.nextInt(11), 8);
+            String b = randomWord(random, random.nextInt(6), 0);
             boolean expected = bruteForce(a, b);
 
             assertEquals(expected, canAbbreviate(a, b), a + " -> " + b);
@@ -83,14 +83,6 @@ class AbbreviationTest {
         assertTrue(yesCount > 500, "too few reachable cases to be a meaningful cross-check: " + yesCount);
     }
 
-    // --- large queries ---------------------------------------------------------------------------
-
-    /**
-     * 2000 letters against a target built to be reachable, cross-checked against the
-     * O(n*m)-memory form of the same recurrence. Collapsing the table to a single row that is
-     * updated in place is the step that could plausibly break at scale, so it is worth checking
-     * against a table that is actually kept - one that also has no {@code n < m} shortcut.
-     */
     @Test
     void matchesTableDpOnLargeReachableQueries() {
         Random random = new Random(20260908L);
@@ -102,41 +94,35 @@ class AbbreviationTest {
             assertTrue(canAbbreviate(a, reachable), "should be reachable by construction");
             assertEquals(tableDp(a, reachable), canAbbreviate(a, reachable));
 
-            // No letter of a can ever produce a 'Z', so one more letter puts the target out of reach.
             assertFalse(canAbbreviate(a, reachable + "Z"));
             assertEquals(tableDp(a, reachable + "Z"), canAbbreviate(a, reachable + "Z"));
         }
     }
 
-    /** 10^4 x 10^4 letters, which is 10^8 table cells - fine for O(n*m), hopeless for anything worse. */
     @Test
     void solvesTenThousandByTenThousand() {
         String a = "ab".repeat(5_000);
         String b = "AB".repeat(5_000);
 
         assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
-            assertTrue(canAbbreviate(a, b));            // capitalize every letter
-            assertFalse(canAbbreviate(a + "Z", b));     // ... but then 'Z' cannot be dropped
-            assertTrue(canAbbreviate(a + "z", b));      // ... whereas 'z' can
+            assertTrue(canAbbreviate(a, b));
+            assertFalse(canAbbreviate(a + "Z", b));
+            assertTrue(canAbbreviate(a + "z", b));
         });
     }
 
-    /** The row is O(m) whatever a's length, so a long a against a short b costs nothing extra. */
     @Test
     void handlesAVeryLongStringAgainstAShortTarget() {
-        String a = "ab".repeat(500_000);   // 10^6 letters, all droppable
+        String a = "ab".repeat(500_000);
 
         assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
-            assertTrue(canAbbreviate(a, ""));                // every letter is droppable
+            assertTrue(canAbbreviate(a, ""));
             assertTrue(canAbbreviate(a, "AB"));
-            assertTrue(canAbbreviate(a, "BA"));              // the 'b' at index 1, then the 'a' at 2
-            assertFalse(canAbbreviate(a, "ABZ"));            // no letter of a can produce a 'Z'
+            assertTrue(canAbbreviate(a, "BA"));
+            assertFalse(canAbbreviate(a, "ABZ"));
         });
     }
 
-    // --- reference implementations ---------------------------------------------------------------
-
-    /** The same recurrence with the whole table kept, and no early returns: O(n*m) time and memory. */
     private static boolean tableDp(String a, String b) {
         int n = a.length();
         int m = b.length();
@@ -157,7 +143,6 @@ class AbbreviationTest {
         return reachable[n][m];
     }
 
-    /** Tries all 2^(lowercase letters) capitalization choices and builds each resulting string. */
     private static boolean bruteForce(String a, String b) {
         int lowercase = (int) a.chars().filter(Character::isLowerCase).count();
 
@@ -180,7 +165,6 @@ class AbbreviationTest {
         return false;
     }
 
-    /** A word over {a, b, A, B}, with {@code lowercaseOutOfTen} of every ten letters lowercase. */
     private static String randomWord(Random random, int length, int lowercaseOutOfTen) {
         StringBuilder word = new StringBuilder(length);
 
@@ -192,7 +176,6 @@ class AbbreviationTest {
         return word.toString();
     }
 
-    /** A target {@code a} can definitely produce: every uppercase letter, plus some capitalized. */
     private static String someTargetOf(Random random, String a) {
         StringBuilder target = new StringBuilder(a.length());
 

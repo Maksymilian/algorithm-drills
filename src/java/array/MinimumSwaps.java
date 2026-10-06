@@ -2,83 +2,82 @@ package array;
 
 import java.util.Arrays;
 
-/**
- * HackerRank "Minimum Swaps 2": given an array holding {@code 1, 2, ... n} in some order, count the
- * fewest swaps of arbitrary pairs needed to sort it.
- * <p>
- * Nothing here sorts in order to count. The array <i>is</i> a permutation written down, and the
- * answer is a property of that permutation. Read position {@code i} as a pointer to the position
- * where its value belongs:
- * <pre>
- *     sigma(i) = arr[i] - 1
- * </pre>
- * That map is a permutation of {@code 0 .. n-1}, so it decomposes into disjoint cycles, and
- * <pre>
- *     minimum swaps = n - (number of cycles)
- * </pre>
- * counting a fixed point as a cycle of length one. Both directions of that equality are two lines:
- * <ul>
- *   <li><b>No fewer.</b> A single swap changes the cycle count by exactly one - swapping two
- *       elements of the same cycle splits it in two, swapping elements of different cycles merges
- *       them. The sorted array is the permutation with {@code n} cycles, so reaching it from
- *       {@code c} cycles cannot take fewer than {@code n - c} swaps.</li>
- *   <li><b>No more.</b> A cycle of length {@code k} is sorted by {@code k - 1} swaps: send any one
- *       element home and what remains is a cycle of length {@code k - 1}. Summed over every cycle,
- *       {@code sum(k_i - 1) = n - c}.</li>
- * </ul>
- * The bound is therefore tight, and the problem is a cycle count - O(n), no comparisons.
- * <p>
- * <b>Not the number a sort reports.</b> Counting the swaps a bubble sort performs answers a
- * different question, because bubble sort may only swap <i>adjacent</i> elements; that count is the
- * number of inversions. On the reversed array the two diverge as far as they can: {@code n(n-1)/2}
- * inversions against {@code floor(n/2)} arbitrary swaps - quadratic against linear. Selection sort,
- * on the other hand, happens to be optimal here, which is exactly what
- * {@link #minimumSwapsInPlace(int[])} is.
- * <p>
- * <b>Five ways to count the cycles</b>, trading processor against memory:
- * <table border="1">
- *   <caption>What each method costs</caption>
- *   <tr><th>Method</th><th>Time</th><th>Extra space</th><th>The argument afterwards</th></tr>
- *   <tr><td>{@link #minimumSwaps(int[])}</td><td>O(n)</td><td>n bytes</td><td>untouched</td></tr>
- *   <tr><td>{@link #minimumSwapsInPlace(int[])}</td><td>O(n)</td><td><b>O(1)</b></td><td><b>sorted</b></td></tr>
- *   <tr><td>{@link #minimumSwapsMarkingSigns(int[])}</td><td>O(n)</td><td><b>O(1)</b></td><td>untouched</td></tr>
- *   <tr><td>{@link #minimumSwapsByUnionFind(int[])}</td><td>O(n a(n))</td><td>9n bytes</td><td>untouched</td></tr>
- *   <tr><td>{@link #minimumSwapsOfAnyDistinctValues(int[])}</td><td>O(n log n)</td><td>9n bytes</td><td>untouched</td></tr>
- * </table>
- * The first three are the interesting spread: the same linear walk, paying for the "have I been
- * here?" bit in a side array, in the array's own sign bit, or not at all by consuming the input.
- * Union-find is strictly dominated on both axes and is here for what it generalizes to, not for its
- * cost - see {@code docs/array/minimum-swaps.md}.
- * <p>
- * <b>Beyond the stated bounds.</b> The problem guarantees a permutation of {@code 1 .. n}, and the
- * first four methods hold the caller to it: anything outside that range, or any duplicate, is an
- * {@link IllegalArgumentException} rather than a wrong answer or - for the in-place walk, which
- * would otherwise spin forever on a repeated value - a hang. {@link #minimumSwapsOfAnyDistinctValues(int[])}
- * drops the assumption instead and takes any distinct {@code int}s, at the cost of a sort. Only
- * duplicate <i>values</i> remain out of scope, and for a reason: equal elements make the
- * assignment of values to destinations non-unique, so the answer stops being a cycle count and
- * becomes a maximisation over the possible assignments.
- */
+/// HackerRank „Minimum Swaps 2”: tablica zawiera `1, 2, ... n` w jakiejś kolejności; policz
+/// najmniejszą liczbę zamian dowolnych par, która ją sortuje.
+///
+/// Nic tu nie sortuje po to, żeby liczyć. Tablica _jest_ zapisaną permutacją, a odpowiedź to
+/// własność tej permutacji. Czytaj pozycję `i` jako wskaźnik na pozycję, na której jej wartość
+/// powinna stać:
+///
+/// ```
+///     sigma(i) = arr[i] - 1
+/// ```
+///
+/// Ta mapa jest permutacją `0 .. n-1`, więc rozpada się na rozłączne cykle, i
+///
+/// ```
+///     najmniej zamian = n - (liczba cykli)
+/// ```
+///
+/// przy czym punkt stały liczy się jako cykl długości jeden. Obie strony tej równości to dwie linijki:
+///
+/// - **Nie mniej.** Jedna zamiana zmienia liczbę cykli dokładnie o jeden: zamiana dwóch elementów
+///    tego samego cyklu dzieli go na dwa, a zamiana elementów różnych cykli je łączy. Posortowana
+///    tablica to permutacja z `n` cyklami, więc z `c` cykli nie da się do niej dojść w mniej niż
+///    `n - c` zamianach.
+///
+/// - **Nie więcej.** Cykl długości `k` sortuje się w `k - 1` zamianach: wyślij dowolny element na
+///    jego miejsce, a reszta to cykl długości `k - 1`. Suma po wszystkich cyklach to
+///    `sum(k_i - 1) = n - c`.
+///
+/// Ograniczenie jest więc dokładne, a zadanie to liczenie cykli: O(n), bez porównań.
+///
+/// **To nie jest liczba, którą poda sortowanie.** Liczba zamian w sortowaniu bąbelkowym odpowiada na
+/// inne pytanie, bo bąbelkowe zamienia tylko _sąsiednie_ elementy; ta liczba to liczba inwersji. Na
+/// odwróconej tablicy obie rozjeżdżają się najbardziej: `n(n-1)/2` inwersji wobec `floor(n/2)` zamian
+/// dowolnych par, czyli kwadratowo wobec liniowo. Sortowanie przez wybieranie jest tu za to
+/// optymalne i właśnie tym jest [#minimumSwapsInPlace(int\[\])].
+///
+/// **Pięć sposobów liczenia cykli**, wymieniających czas procesora na pamięć:
+///
+/// | Metoda | Czas | Dodatkowa pamięć | Argument po wywołaniu |
+/// |---|---|---|---|
+/// | [#minimumSwaps(int\[\])] | O(n) | n bajtów | nietknięty |
+/// | [#minimumSwapsInPlace(int\[\])] | O(n) | **O(1)** | **posortowany** |
+/// | [#minimumSwapsMarkingSigns(int\[\])] | O(n) | **O(1)** | nietknięty |
+/// | [#minimumSwapsByUnionFind(int\[\])] | O(n a(n)) | 9n bajtów | nietknięty |
+/// | [#minimumSwapsOfAnyDistinctValues(int\[\])] | O(n log n) | 9n bajtów | nietknięty |
+///
+/// Ciekawe są pierwsze trzy: to samo liniowe przejście, a za bit „czy już tu byłem?” płacą tablicą
+/// pomocniczą, bitem znaku w samej tablicy albo wcale, zużywając wejście. Union-find przegrywa na obu
+/// osiach i jest tu dla tego, co uogólnia, a nie dla kosztu; zob. `docs/array/minimum-swaps.md`.
+///
+/// **Poza ograniczeniami zadania.** Zadanie gwarantuje permutację `1 .. n`, a pierwsze cztery metody
+/// tego pilnują: wartość spoza zakresu albo powtórzenie to [IllegalArgumentException], a nie zła
+/// odpowiedź ani, w przejściu w miejscu, które na powtórzonej wartości kręciłoby się w
+/// nieskończoność, zawieszenie. [#minimumSwapsOfAnyDistinctValues(int\[\])] porzuca to założenie i
+/// przyjmuje dowolne różne `int`y, za cenę sortowania. Poza zakresem zostają tylko powtórzone
+/// _wartości_, i to z powodu: równe elementy sprawiają, że przypisanie wartości do miejsc nie jest
+/// jednoznaczne, więc odpowiedź przestaje być liczbą cykli i staje się maksimum po możliwych
+/// przypisaniach.
+///
+/// **Metody:**
+///
+/// - [#minimumSwaps(int\[\])]: sygnatura z HackerRank; przejście po cyklach z tablicą odwiedzin.
+///   Przy okazji sprawdza, czy to permutacja: przejście, które nie wraca do swojego początku,
+///   znalazło powtórzenie.
+/// - [#minimumSwapsInPlace(int\[\])]: sortowanie przez wybieranie bez szukania, bo `arr[i]` mówi,
+///   gdzie należy. Wykonane zamiany to najkrótszy ciąg; wejście zostaje posortowane.
+/// - [#minimumSwapsMarkingSigns(int\[\])]: bit „odwiedzony” to znak liczby w samej tablicy;
+///   `finally` przywraca znaki także przy wyjątku. Na losowej permutacji przy n = 10^7 jest szybsza
+///   od wersji z tablicą odwiedzin.
+/// - [#minimumSwapsByUnionFind(int\[\])]: najdroższa, ale odpowiada na pytanie o zamiany
+///   **ograniczone** do danych par: składowe mówią, co da się posortować. Samej liczby zamian już
+///   nie (to problem NP-trudny).
+/// - [#minimumSwapsOfAnyDistinctValues(int\[\])]: dowolne różne liczby; rangi z sortowania kopii,
+///   O(n log n).
 public class MinimumSwaps {
 
-    /**
-     * The HackerRank signature: the fewest swaps that sort {@code arr}, leaving {@code arr}
-     * untouched.
-     * <p>
-     * Walks every cycle of {@code i -> arr[i] - 1} once, remembering the positions already visited
-     * in a side array, and adds {@code length - 1} per cycle. Time O(n) - each position is entered
-     * exactly once across all walks - and n bytes of extra space.
-     * <p>
-     * The walk doubles as the permutation check, for free. In a genuine permutation every position
-     * has exactly one predecessor, so a walk can only ever terminate by arriving back at its own
-     * starting point. A duplicate value leaves some position with no predecessor at all; that
-     * position is still unvisited when its turn as a start comes round, and its walk necessarily
-     * ends somewhere else.
-     *
-     * @param arr a permutation of {@code 1 .. arr.length}
-     * @return the minimum number of swaps
-     * @throws IllegalArgumentException if {@code arr} is null, or is not such a permutation
-     */
     public static int minimumSwaps(int[] arr) {
         if (arr == null) throw new IllegalArgumentException("arr must not be null");
 
@@ -98,33 +97,11 @@ public class MinimumSwaps {
             }
             if (position != start) throw duplicateAt(position, arr);
 
-            swaps += length - 1;               // a cycle of length k costs k - 1
+            swaps += length - 1;               // cykl długości k kosztuje k - 1
         }
         return swaps;
     }
 
-    /**
-     * The fewest swaps that sort {@code arr}, <b>by actually sorting it</b> - on return
-     * {@code arr} holds {@code 1 .. n} in order.
-     * <p>
-     * This is selection sort with the search removed: the element that belongs at position
-     * {@code i} need not be looked for, because {@code arr[i]} already says where <i>it</i> belongs.
-     * Repeatedly swapping {@code arr[i]} to its home walks the cycle through {@code i} and closes
-     * it, sending one element home per swap. The count is therefore not just computed but
-     * witnessed - the swaps it performs are a shortest sequence.
-     * <p>
-     * Time O(n): the inner loop runs at most once per element over the whole method, since every
-     * iteration puts a value at its final index. Space O(1), which no other method here manages
-     * without either a side array or the input's sign bit - the price being that the input is
-     * consumed.
-     * <p>
-     * On malformed input this throws <i>after</i> having already moved elements around; the array
-     * is then a rearrangement of what was passed in, not the original order.
-     *
-     * @param arr a permutation of {@code 1 .. arr.length}, sorted in place
-     * @return the minimum number of swaps, which is also the number performed
-     * @throws IllegalArgumentException if {@code arr} is null, or is not such a permutation
-     */
     public static int minimumSwapsInPlace(int[] arr) {
         if (arr == null) throw new IllegalArgumentException("arr must not be null");
 
@@ -134,7 +111,7 @@ public class MinimumSwaps {
         for (int i = 0; i < n; i++) {
             while (arr[i] != i + 1) {
                 int home = destinationOf(arr[i], n);
-                if (arr[home] == arr[i]) throw duplicateAt(home, arr);   // or this would never end
+                if (arr[home] == arr[i]) throw duplicateAt(home, arr);   // inaczej to by się nie skończyło
 
                 int displaced = arr[home];
                 arr[home] = arr[i];
@@ -145,37 +122,12 @@ public class MinimumSwaps {
         return swaps;
     }
 
-    /**
-     * The fewest swaps that sort {@code arr}, in O(1) extra space and with {@code arr} restored
-     * before returning.
-     * <p>
-     * The same cycle walk as {@link #minimumSwaps(int[])}, but the "visited" bit is borrowed from
-     * the array itself: the values are guaranteed positive, so negating one marks its position and
-     * leaves the magnitude readable. A final pass flips the signs back, so the method is observably
-     * non-mutating even though it writes to the caller's array twice - including when it throws,
-     * which is what the {@code finally} is for.
-     * <p>
-     * Time O(n) in three passes rather than one - validate, walk, restore - and O(1) extra space.
-     * Against {@link #minimumSwaps(int[])} that is the whole trade, and it does not go the way
-     * counting passes suggests. On a random permutation both walks miss cache on every step, but
-     * the side array adds a <i>second</i> randomly indexed stream while these two extra passes are
-     * sequential and prefetchable - so at n = 10^7 the method that allocates nothing is also the
-     * faster one. On a permutation whose walk is already sequential the order reverses, the extra
-     * passes being all that is left to pay. Measurements in {@code docs/array/minimum-swaps.md}.
-     * <p>
-     * Not thread-safe with respect to {@code arr}, and not merely in the usual sense: a concurrent
-     * <i>reader</i> of the array will see negative values mid-flight.
-     *
-     * @param arr a permutation of {@code 1 .. arr.length}; mutated during the call, restored on exit
-     * @return the minimum number of swaps
-     * @throws IllegalArgumentException if {@code arr} is null, or is not such a permutation
-     */
     public static int minimumSwapsMarkingSigns(int[] arr) {
         if (arr == null) throw new IllegalArgumentException("arr must not be null");
 
         int n = arr.length;
         for (int value : arr) {
-            destinationOf(value, n);           // the range check, before any sign becomes ambiguous
+            destinationOf(value, n);           // sprawdzenie zakresu, zanim jakikolwiek znak stanie się niejednoznaczny
         }
 
         int swaps = 0;
@@ -187,7 +139,7 @@ public class MinimumSwaps {
                 int length = 0;
                 while (arr[position] > 0) {
                     int value = arr[position];
-                    arr[position] = -value;    // mark, without losing the value
+                    arr[position] = -value;    // oznacz, nie gubiąc wartości
                     position = value - 1;
                     length++;
                 }
@@ -203,43 +155,12 @@ public class MinimumSwaps {
         return swaps;
     }
 
-    /**
-     * The fewest swaps that sort {@code arr}, counting cycles as connected components.
-     * <p>
-     * Union every position with the position its value belongs at. Because the map is a
-     * permutation, the components are exactly its cycles, so the answer is again
-     * {@code n - components}. Time O(n a(n)) with union by size and path halving - a(n) being the
-     * inverse Ackermann function, at most 4 for any array that fits in memory - and 8n bytes for
-     * the two int arrays, plus another n for the separate permutation check it cannot fold in.
-     * <p>
-     * On cost alone this loses to every other method here: same linear order, nine times the
-     * memory of {@link #minimumSwaps(int[])}, and pointer-chasing where the others walk. It is
-     * included for the question a cycle walk cannot answer.
-     * <p>
-     * Every walk in this file assumes swaps are <b>unrestricted</b> - any two positions, at any
-     * time - and the cycle decomposition says nothing once that goes. Given instead a list of
-     * position pairs that <i>may</i> be swapped, the components of that graph answer
-     * <b>reachability</b>: an element can arrive at a position exactly when the two share a
-     * component, so the array is sortable if and only if every component already holds the values
-     * belonging to its own positions, and the closest reachable arrangement is each component
-     * sorted within itself.
-     * <p>
-     * The <i>count</i> does not generalise with it. {@code n - components} is not the restricted
-     * cost - allowing only the pairs {@code (0,1)} and {@code (1,2)} leaves one component, so that
-     * formula says 2, while {@code [3, 2, 1]} demonstrably needs 3. It must be wrong, too:
-     * adjacent-only swaps are bubble sort, whose cost is the inversion count. Counting swaps under
-     * a restricted graph is the token swapping problem, and it is NP-hard in general.
-     *
-     * @param arr a permutation of {@code 1 .. arr.length}
-     * @return the minimum number of swaps
-     * @throws IllegalArgumentException if {@code arr} is null, or is not such a permutation
-     */
     public static int minimumSwapsByUnionFind(int[] arr) {
         if (arr == null) throw new IllegalArgumentException("arr must not be null");
         int n = arr.length;
 
-        // Union-find merges silently: a duplicate value would union an edge twice and simply be
-        // absorbed, so unlike the cycle walks this one cannot check as it goes.
+        // Union-find łączy po cichu: powtórzona wartość połączyłaby krawędź dwa razy i po prostu by
+        // przepadła, więc w odróżnieniu od przejść po cyklach ta metoda nie sprawdza danych po drodze.
         requirePermutation(arr);
 
         int[] parent = new int[n];
@@ -253,7 +174,7 @@ public class MinimumSwaps {
             int b = find(parent, destinationOf(arr[i], n));
             if (a == b) continue;
 
-            if (size[a] < size[b]) {           // union by size, so trees stay shallow
+            if (size[a] < size[b]) {           // łączenie według rozmiaru, żeby drzewa były płytkie
                 int swap = a;
                 a = b;
                 b = swap;
@@ -265,27 +186,6 @@ public class MinimumSwaps {
         return n - components;
     }
 
-    /**
-     * The fewest swaps that sort any array of <b>distinct</b> {@code int}s - the same problem with
-     * the {@code 1 .. n} assumption dropped.
-     * <p>
-     * Only one thing about the values matters to the cycle count: where each one belongs, which is
-     * its rank. Sorting a copy recovers the ranks, and a binary search per element turns the array
-     * into the permutation the other methods take for granted. Time O(n log n), dominated by the
-     * sort, and 9n bytes.
-     * <p>
-     * The sort is unavoidable here, and it is the reason the {@code 1 .. n} promise is worth as
-     * much as it is: it hands the caller the ranks for free, and with them a linear answer to a
-     * question that otherwise cannot be answered without ordering the values.
-     * <p>
-     * Distinctness is not a technicality. With duplicates there is no single "where it belongs" -
-     * equal values may be sent to any of their destinations - and the minimum is then taken over
-     * every such assignment rather than read off one.
-     *
-     * @param a any array of distinct integers, not modified
-     * @return the minimum number of swaps
-     * @throws IllegalArgumentException if {@code a} is null or holds a repeated value
-     */
     public static int minimumSwapsOfAnyDistinctValues(int[] a) {
         if (a == null) throw new IllegalArgumentException("a must not be null");
         int n = a.length;
@@ -300,7 +200,7 @@ public class MinimumSwaps {
 
         int[] destination = new int[n];
         for (int i = 0; i < n; i++) {
-            destination[i] = Arrays.binarySearch(sorted, a[i]);   // the rank of a[i], i.e. its home
+            destination[i] = Arrays.binarySearch(sorted, a[i]);   // ranga a[i], czyli jego miejsce
         }
 
         boolean[] visited = new boolean[n];
@@ -318,7 +218,6 @@ public class MinimumSwaps {
         return swaps;
     }
 
-    /** Where a value belongs, 0-based, checking that it is a value this array is allowed to hold. */
     private static int destinationOf(int value, int n) {
         if (value < 1 || value > n) {
             throw new IllegalArgumentException(
@@ -327,13 +226,11 @@ public class MinimumSwaps {
         return value - 1;
     }
 
-    /** The walk ended at {@code position} instead of where it started, so something is repeated. */
     private static IllegalArgumentException duplicateAt(int position, int[] arr) {
         return new IllegalArgumentException(
                 "arr must hold 1.." + arr.length + " without duplicates, but " + (position + 1) + " repeats");
     }
 
-    /** An explicit check, for the methods whose own traversal does not amount to one. */
     private static void requirePermutation(int[] arr) {
         int n = arr.length;
         boolean[] seen = new boolean[n];
@@ -344,7 +241,6 @@ public class MinimumSwaps {
         }
     }
 
-    /** Iterative, with path halving: no recursion to overflow, and the tree flattens as it reads. */
     private static int find(int[] parent, int i) {
         while (parent[i] != i) {
             parent[i] = parent[parent[i]];

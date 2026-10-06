@@ -10,53 +10,53 @@ import java.util.function.LongConsumer;
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
-/**
- * A bounded single-producer, single-consumer queue of {@code long}s, off-heap, with its indices laid
- * out so that the two threads never write to the same cache line.
- *
- * <h2>Why there are no locks and no CAS</h2>
- * Each index has exactly one writer: only the producer moves {@code tail}, only the consumer moves
- * {@code head}. A single writer never needs an atomic read-modify-write, so every update is a plain
- * read followed by a {@code setRelease} — an ordinary store on x86. The release/acquire pair is the
- * whole synchronisation argument:
- *
- * <ul>
- *   <li>the producer stores the element, then {@code TAIL.setRelease(tail + 1)}; a consumer that
- *       {@code getAcquire}s that tail is guaranteed to see the element.</li>
- *   <li>the consumer reads the element, then {@code HEAD.setRelease(head + 1)}; a producer that
- *       {@code getAcquire}s that head knows the slot is free to overwrite.</li>
- * </ul>
- *
- * The indices increase forever and are masked only when they address a slot, so {@code tail - head}
- * is the size and there is no full/empty ambiguity to spend a slot on. A {@code long} at one
- * increment per nanosecond wraps after 292 years.
- *
- * <h2>The layout</h2>
- * <pre>
- *   offset   0  producer: tail, headCache, padding to 128   (written only by the producer)
- *   offset 128  consumer: head, tailCache, padding to 128   (written only by the consumer)
- *   separate    data:     capacity × long
- * </pre>
- *
- * The caches are what make it fast. Without them the producer would read the consumer's
- * {@code head} on every offer, pulling the consumer's line across the interconnect each time. With
- * them it reads {@code head} only when its cached copy says the queue is full, which in a running
- * pipeline is once per lap rather than once per element. The caches have to live <em>inside</em>
- * the padded groups: as two ordinary fields of this object they would sit next to each other, and
- * the producer's cache and the consumer's cache would false-share with each other.
- *
- * <h2>Who owns the memory</h2>
- * The caller, through the {@link Arena} the constructor takes. Two threads use this queue, so in
- * real use that arena must be {@linkplain Arena#ofShared() shared}, and must not be closed while
- * either thread can still reach the queue. A {@linkplain Arena#ofConfined() confined} arena works
- * only when one thread plays both roles — which is what the single-threaded tests do.
- *
- * <p>Nothing checks that there is only one producer and one consumer. Two producers would both read
- * the same tail and overwrite each other's element; that is the price of having no CAS.
- */
+/// Ograniczona kolejka `long`ów dla jednego producenta i jednego konsumenta, poza stertą, z indeksami
+/// ułożonymi tak, że oba wątki nigdy nie piszą do tej samej linii pamięci podręcznej.
+///
+/// **Dlaczego bez blokad i bez CAS.** Każdy indeks ma dokładnie jednego piszącego: tylko producent
+/// przesuwa `tail`, tylko konsument przesuwa `head`. Jedyny piszący nigdy nie potrzebuje atomowego
+/// odczytu-modyfikacji-zapisu, więc każda zmiana to zwykły odczyt i `setRelease`, na x86 zwykły
+/// zapis. Para release/acquire to cały argument o synchronizacji:
+///
+/// - producent zapisuje element, potem `TAIL.setRelease(tail + 1)`; konsument, który przez
+///    `getAcquire` odczyta ten tail, na pewno zobaczy element.
+///
+/// - konsument czyta element, potem `HEAD.setRelease(head + 1)`; producent, który przez
+///    `getAcquire` odczyta ten head, wie, że pole można nadpisać.
+///
+/// Indeksy rosną bez końca i są maskowane tylko przy adresowaniu pola, więc `tail - head` to rozmiar
+/// i nie ma niejednoznaczności pełna/pusta, na którą trzeba by poświęcić pole. `long` zwiększany raz
+/// na nanosekundę przepełni się po 292 latach.
+///
+/// **Układ:**
+///
+/// ```
+///   offset   0  producent: tail, headCache, wypełnienie do 128   (pisze tylko producent)
+///   offset 128  konsument: head, tailCache, wypełnienie do 128   (pisze tylko konsument)
+///   osobno      dane:      capacity × long
+/// ```
+///
+/// O szybkości decydują kopie (cache). Bez nich producent czytałby `head` konsumenta przy każdym
+/// `offer`, za każdym razem ściągając linię konsumenta przez magistralę. Z nimi czyta `head` tylko
+/// wtedy, gdy jego kopia mówi, że kolejka jest pełna, co w działającym potoku zdarza się raz na
+/// okrążenie, a nie raz na element. Kopie muszą leżeć _wewnątrz_ wypełnionych grup: jako dwa zwykłe
+/// pola tego obiektu stałyby obok siebie i fałszywie współdzieliłyby linię ze sobą nawzajem.
+///
+/// `offer(value)` dodaje element albo zwraca `false`, gdy kolejka jest pełna (tylko wątek
+/// producenta). `drain(sink, max)` przekazuje do `max` elementów po kolei i zwraca ich liczbę
+/// (tylko wątek konsumenta). `size()` jest dokładne tylko z wątku, który w tej chwili ani nie
+/// produkuje, ani nie konsumuje.
+///
+/// **Kto jest właścicielem pamięci.** Wywołujący, przez [Arena] przekazaną konstruktorowi. Kolejki
+/// używają dwa wątki, więc w prawdziwym użyciu arena musi być [współdzielona][Arena#ofShared()] i
+/// nie wolno jej zamknąć, dopóki któryś wątek może jeszcze sięgnąć do kolejki. Arena
+/// [ograniczona do wątku][Arena#ofConfined()] działa tylko wtedy, gdy jeden wątek gra obie role, co
+/// robią testy jednowątkowe.
+///
+/// Nic nie sprawdza, czy producent i konsument są naprawdę jedni. Dwóch producentów odczytałoby ten
+/// sam tail i nadpisało sobie elementy; to cena braku CAS.
 public final class SpscRingBuffer {
 
-    /** Bytes per index group: two cache lines, as in {@link PaddedCounters#STRIDE}. */
     public static final long STRIDE = 128;
 
     private static StructLayout side(String index, String cache) {
@@ -67,7 +67,6 @@ public final class SpscRingBuffer {
         ).withByteAlignment(STRIDE);
     }
 
-    /** The two index groups, one per thread, each alone on its own pair of cache lines. */
     public static final StructLayout HEADER = MemoryLayout.structLayout(
             side("tail", "headCache").withName("producer"),
             side("head", "tailCache").withName("consumer"));
@@ -86,10 +85,6 @@ public final class SpscRingBuffer {
     private final MemorySegment data;
     private final long mask;
 
-    /**
-     * @param arena    owns the header and the slots; shared if two threads will use the queue
-     * @param capacity a power of two, so that an index becomes a slot with one mask
-     */
     public SpscRingBuffer(Arena arena, int capacity) {
         if (capacity <= 0 || Integer.bitCount(capacity) != 1) {
             throw new IllegalArgumentException("capacity must be a positive power of two: " + capacity);
@@ -99,40 +94,26 @@ public final class SpscRingBuffer {
         this.data = arena.allocate(JAVA_LONG, capacity);
     }
 
-    // ---------- producer side ----------
+    // ---------- strona producenta ----------
 
-    /**
-     * Appends {@code value}, or returns false if the queue is full. Producer thread only.
-     *
-     * <p>The fast path touches only the producer's own line: a plain read of its tail, a plain read
-     * of its cached head, the element store, and the release.
-     */
     public boolean offer(long value) {
-        long tail = (long) TAIL.get(header, 0L);                  // plain: we are its only writer
-        if (tail - (long) HEAD_CACHE.get(header, 0L) > mask) {    // looks full by the cache
-            long head = (long) HEAD.getAcquire(header, 0L);       // so look at the real thing
+        long tail = (long) TAIL.get(header, 0L);                  // zwykły odczyt: jesteśmy jedynym piszącym
+        if (tail - (long) HEAD_CACHE.get(header, 0L) > mask) {    // według kopii wygląda na pełną
+            long head = (long) HEAD.getAcquire(header, 0L);       // więc sprawdź prawdziwą wartość
             HEAD_CACHE.set(header, 0L, head);
             if (tail - head > mask) return false;
         }
         data.setAtIndex(JAVA_LONG, tail & mask, value);
-        TAIL.setRelease(header, 0L, tail + 1);                    // publishes the element
+        TAIL.setRelease(header, 0L, tail + 1);                    // publikuje element
         return true;
     }
 
-    // ---------- consumer side ----------
+    // ---------- strona konsumenta ----------
 
-    /**
-     * Hands up to {@code max} elements to {@code sink}, in order, and returns how many it handed
-     * over. Consumer thread only.
-     *
-     * <p>Draining in batches is the other half of the performance: however many elements are taken,
-     * the head is released once, so the producer sees one store from this side per batch rather
-     * than one per element.
-     */
     public int drain(LongConsumer sink, int max) {
-        long head = (long) HEAD.get(header, 0L);                  // plain: we are its only writer
+        long head = (long) HEAD.get(header, 0L);                  // zwykły odczyt: jesteśmy jedynym piszącym
         long available = (long) TAIL_CACHE.get(header, 0L) - head;
-        if (available < max) {                                    // the cache may be stale; refresh
+        if (available < max) {                                    // kopia może być nieaktualna; odśwież
             long tail = (long) TAIL.getAcquire(header, 0L);
             TAIL_CACHE.set(header, 0L, tail);
             available = tail - head;
@@ -142,16 +123,12 @@ public final class SpscRingBuffer {
         for (int i = 0; i < n; i++) {
             sink.accept(data.getAtIndex(JAVA_LONG, (head + i) & mask));
         }
-        HEAD.setRelease(header, 0L, head + n);                    // frees all n slots at once
+        HEAD.setRelease(header, 0L, head + n);                    // zwalnia wszystkie n pól naraz
         return n;
     }
 
-    // ---------- either side, approximately ----------
+    // ---------- dowolna strona, w przybliżeniu ----------
 
-    /**
-     * How many elements are queued. Exact from a thread that is neither producing nor consuming at
-     * the time; from anywhere else it is out of date as soon as it returns.
-     */
     public long size() {
         long head = (long) HEAD.getAcquire(header, 0L);
         long tail = (long) TAIL.getAcquire(header, 0L);
@@ -162,7 +139,6 @@ public final class SpscRingBuffer {
         return (int) (mask + 1);
     }
 
-    /** The index groups, read-only — for checking their layout and alignment. */
     public MemorySegment headerSegment() {
         return header.asReadOnly();
     }

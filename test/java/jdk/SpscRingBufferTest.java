@@ -17,14 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link SpscRingBuffer}: layout first, then the queue's behaviour with one thread playing both
- * roles in a confined arena, then the real case — a producer and a consumer on a shared arena,
- * with the consumer checking that every value arrives exactly once and in order.
- */
 class SpscRingBufferTest {
-
-    // ---------- the layout ----------
 
     @Test
     void producerAndConsumerIndicesAreOnSeparateCacheLinePairs() {
@@ -52,8 +45,6 @@ class SpscRingBufferTest {
             }
         }
     }
-
-    // ---------- one thread in both roles, confined arena ----------
 
     @Test
     void offerFailsOnlyWhenFullAndDrainIsFifo() {
@@ -84,7 +75,6 @@ class SpscRingBufferTest {
         }
     }
 
-    /** Many laps of a small ring, at every fill level, so the masking of the indices is exercised. */
     @Test
     void wrapsAroundForManyLaps() {
         try (Arena arena = Arena.ofConfined()) {
@@ -92,7 +82,7 @@ class SpscRingBufferTest {
             long next = 0;
             long[] expected = {0};
             for (int round = 0; round < 1_000; round++) {
-                int burst = round % 5;                     // 0..4: empty up to exactly full
+                int burst = round % 5;
                 for (int i = 0; i < burst; i++) assertTrue(queue.offer(next++));
                 int got = queue.drain(v -> assertEquals(expected[0]++, v), burst);
                 assertEquals(burst, got, "round " + round);
@@ -128,13 +118,6 @@ class SpscRingBufferTest {
         assertThrows(IllegalStateException.class, () -> queue.offer(2));
     }
 
-    // ---------- a real producer and consumer, shared arena ----------
-
-    /**
-     * Ten million values through a 1024-slot ring: every value must arrive once and in order, which
-     * is what release/acquire on the indices promises. A missing barrier shows up here as a
-     * duplicate, a gap or a stale slot.
-     */
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     void everyValueArrivesOnceAndInOrder() throws InterruptedException {
@@ -163,7 +146,7 @@ class SpscRingBufferTest {
                 }
             });
             producer.join();
-            consumer.join();                               // both, before the arena closes
+            consumer.join();
 
             assertNull(failure.get());
             assertEquals(0, queue.size());

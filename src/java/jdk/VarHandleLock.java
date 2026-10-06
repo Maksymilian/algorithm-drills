@@ -10,60 +10,60 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * A reentrant exclusive {@link Lock} built from two {@link VarHandle}s, a queue and
- * {@link LockSupport} — the parts {@link ReentrantLock} hides inside {@code AbstractQueuedSynchronizer},
- * spelled out.
- *
- * <p>It exists to answer one question with code rather than prose: <em>what is actually in a lock?</em>
- * The answer is smaller than it looks.
- *
- * <ol>
- *   <li><b>One atomic state word.</b> {@code state} is the hold count: {@code 0} means free, and a
- *       successful {@code compareAndSet(0, 1)} <em>is</em> the acquisition. Nothing else about the
- *       fast path matters — an uncontended lock is one CAS and one plain store.</li>
- *   <li><b>An owner, so holds can be counted.</b> This is the whole of reentrancy, and the whole of
- *       why {@code unlock} can reject a thread that never acquired — the difference between a lock
- *       and a {@link java.util.concurrent.Semaphore} permit.</li>
- *   <li><b>A queue and a parking protocol,</b> for when the CAS fails. Everything hard lives here:
- *       a thread must enqueue, re-check, park, and be woken exactly often enough.</li>
- * </ol>
- *
- * <h2>Why a VarHandle rather than {@code volatile} and {@code synchronized}</h2>
- * A {@code volatile} field gives every access the same, strongest ordering. A {@code VarHandle}
- * makes the ordering a property of the <em>access</em>, so each line can say what it needs:
- *
- * <ul>
- *   <li>{@code STATE.compareAndSet(this, 0, 1)} — the acquisition. Atomic, and a full fence, because
- *       everything the previous holder did must become visible before anything this holder does.</li>
- *   <li>{@code STATE.set(this, n)} for the reentrant case — a <b>plain</b> store. Only the owner can
- *       reach this line, and no other thread may read the count, so ordering it would buy nothing.</li>
- *   <li>{@code STATE.setVolatile(this, 0)} — the release. This single store is what publishes the
- *       whole critical section to the next acquirer.</li>
- * </ul>
- *
- * Choosing plain access for the reentrant path is the point of the exercise, not a micro-optimisation:
- * it is only correct because of a stated invariant (the field is owner-confined while held), and
- * writing it down is what makes the invariant visible.
- *
- * <h2>Lost wakeups, and why this one does not have any</h2>
- * The dangerous interleaving is: a thread fails its CAS, and the holder releases and unparks the
- * queue <em>before</em> that thread has enqueued. It then parks with nobody left to wake it. The
- * guard is ordering, not luck — {@code acquireQueued} enqueues <b>first</b> and re-checks
- * <b>after</b>, so a release that missed the enqueue is always caught by the re-check, and a release
- * that saw the enqueue always unparks. {@link LockSupport} does the rest: its permit is sticky, so
- * an {@code unpark} that arrives before the {@code park} is not lost, it just makes the park return
- * at once.
- *
- * <h2>What it does not do</h2>
- * {@link #newCondition()} throws — a correct {@link Condition} needs a second queue and a transfer
- * protocol between the two, which is a larger exercise than this one, and {@link java.util.concurrent.locks.StampedLock}
- * makes the same refusal for the same reason. For anything real, use {@code ReentrantLock}: it is
- * better tested than this, it has conditions, and (as measured in the notes beside this file) it is
- * also faster under contention.
- *
- * @see java.util.concurrent.locks.ReentrantLock
- */
+/// Wielowejściowa blokada wyłączna ([Lock]) zbudowana z dwóch [VarHandle], kolejki i [LockSupport]:
+/// części, które [ReentrantLock] chowa w `AbstractQueuedSynchronizer`, rozpisane na wierzchu.
+///
+/// Istnieje, żeby odpowiedzieć kodem, a nie prozą, na jedno pytanie: _co właściwie jest w blokadzie?_
+/// Odpowiedź jest mniejsza, niż się wydaje.
+///
+/// 1. **Jedno atomowe słowo stanu.** `state` to liczba zajęć: `0` znaczy wolna, a udane
+///    `compareAndSet(0, 1)` _jest_ zajęciem. Nic więcej na szybkiej ścieżce się nie liczy:
+///    blokada bez rywalizacji to jeden CAS i jeden zwykły zapis.
+///
+/// 1. **Właściciel, żeby dało się liczyć zajęcia.** To cała wielowejściowość i cały powód, dla
+///    którego `unlock` może odrzucić wątek, który nigdy blokady nie zajął: różnica między blokadą a
+///    zezwoleniem [java.util.concurrent.Semaphore].
+///
+/// 1. **Kolejka i protokół parkowania** na wypadek, gdy CAS się nie uda. Tu mieszka wszystko, co
+///    trudne: wątek musi stanąć w kolejce, sprawdzić ponownie, zaparkować i zostać obudzony
+///    dokładnie tyle razy, ile trzeba.
+///
+/// Domyślny konstruktor daje blokadę, w której nowy wątek może zająć wolną blokadę przed czekającymi
+/// (barging); `new VarHandleLock(true)` daje kolejność przybycia. [#tryLock()] zawsze omija kolejkę,
+/// z tym samym udokumentowanym wyjątkiem co `ReentrantLock` i `Semaphore`.
+///
+/// **Dlaczego VarHandle, a nie `volatile` i `synchronized`.** Pole `volatile` daje każdemu dostępowi
+/// to samo, najsilniejsze uporządkowanie. `VarHandle` czyni uporządkowanie własnością _dostępu_, więc
+/// każda linia może powiedzieć, czego potrzebuje:
+///
+/// - `STATE.compareAndSet(this, 0, 1)`: zajęcie. Atomowe i z pełną barierą, bo wszystko, co zrobił
+///    poprzedni właściciel, musi być widoczne, zanim cokolwiek zrobi ten.
+///
+/// - `STATE.set(this, n)` przy ponownym wejściu: **zwykły** zapis. Do tej linii dociera tylko
+///    właściciel, a żaden inny wątek nie może czytać licznika, więc uporządkowanie nic by nie dało.
+///
+/// - `STATE.setVolatile(this, 0)`: zwolnienie. Ten jeden zapis publikuje całą sekcję krytyczną
+///    następnemu, kto zajmie blokadę.
+///
+/// Zwykły dostęp na ścieżce ponownego wejścia to sedno ćwiczenia, a nie mikrooptymalizacja: jest
+/// poprawny tylko dzięki zapisanemu niezmiennikowi (pole należy do właściciela, dopóki blokada jest
+/// zajęta), a zapisanie go czyni niezmiennik widocznym.
+///
+/// **Zgubione pobudki i dlaczego tutaj ich nie ma.** Niebezpieczny przeplot: wątek przegrywa CAS, a
+/// właściciel zwalnia blokadę i budzi kolejkę, _zanim_ ten wątek do niej trafi. Wątek parkuje wtedy i
+/// nikt go już nie obudzi. Ochroną jest kolejność, nie szczęście: `acquireQueued` **najpierw** staje
+/// w kolejce, a **potem** sprawdza ponownie, więc zwolnienie, które przegapiło wejście do kolejki,
+/// zawsze złapie ponowne sprawdzenie, a zwolnienie, które je widziało, zawsze obudzi. Resztę robi
+/// [LockSupport]: jego zezwolenie się zachowuje, więc `unpark` przed `park` nie ginie, tylko sprawia,
+/// że `park` od razu wraca.
+///
+/// **Czego nie robi.** [#newCondition()] rzuca wyjątek: poprawny [Condition] wymaga drugiej kolejki i
+/// protokołu przenoszenia między nimi, co jest większym ćwiczeniem niż to, a
+/// [java.util.concurrent.locks.StampedLock] odmawia z tego samego powodu. Do prawdziwego użytku
+/// weź `ReentrantLock`: jest lepiej przetestowany, ma warunki i (jak pokazują pomiary w notatce) jest
+/// też szybszy przy rywalizacji.
+///
+/// @see java.util.concurrent.locks.ReentrantLock
 public final class VarHandleLock implements Lock {
 
     private static final VarHandle STATE;
@@ -75,48 +75,32 @@ public final class VarHandleLock implements Lock {
             STATE = lookup.findVarHandle(VarHandleLock.class, "state", int.class);
             OWNER = lookup.findVarHandle(VarHandleLock.class, "owner", Thread.class);
         } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);   // the class is unusable; fail at load
+            throw new ExceptionInInitializerError(e);   // klasa jest bezużyteczna; przerwij przy ładowaniu
         }
     }
 
-    /** Hold count: 0 when free. Written by CAS to take it, plainly to re-enter, volatile to release. */
     private int state;
 
-    /** The holder, or null when free. Never read without {@code state != 0} having been established. */
     private Thread owner;
 
-    /** FIFO among threads that have already queued; {@code fair} decides whether newcomers may skip it. */
     private final Queue<Thread> waiters = new ConcurrentLinkedQueue<>();
 
     private final boolean fair;
 
-    /** A barging lock: a newcomer may take a free lock ahead of threads that are already waiting. */
     public VarHandleLock() {
         this(false);
     }
 
-    /**
-     * @param fair when true, {@link #lock()} declines the fast path while anyone is queued, so the
-     *             lock is granted in arrival order. {@link #tryLock()} barges either way — the same
-     *             documented exception {@code ReentrantLock} and {@code Semaphore} both make.
-     */
     public VarHandleLock(boolean fair) {
         this.fair = fair;
     }
 
-    // ---------- the fast path: one CAS ----------
+    // ---------- szybka ścieżka: jeden CAS ----------
 
-    /**
-     * The whole uncontended acquisition. Note the order of the two stores: the CAS claims the lock
-     * and only then is {@code owner} written, so a thread that observes {@code state != 0} with
-     * {@code owner == null} sees a lock that is held by someone who has not finished announcing
-     * itself — which is why {@code owner} is only ever compared against the current thread, never
-     * treated as "who holds it".
-     */
     private boolean tryAcquire() {
         Thread me = Thread.currentThread();
-        if (OWNER.getVolatile(this) == me) {              // reentrant: we already own it
-            STATE.set(this, (int) STATE.get(this) + 1);   // plain — owner-confined while held
+        if (OWNER.getVolatile(this) == me) {              // ponowne wejście: już jesteśmy właścicielem
+            STATE.set(this, (int) STATE.get(this) + 1);   // zwykły zapis: pole należy do właściciela, dopóki blokada jest zajęta
             return true;
         }
         if (STATE.compareAndSet(this, 0, 1)) {
@@ -128,7 +112,7 @@ public final class VarHandleLock implements Lock {
 
     @Override
     public boolean tryLock() {
-        // barges past the queue by design, exactly as ReentrantLock.tryLock() does even when fair
+        // celowo omija kolejkę, dokładnie jak ReentrantLock.tryLock(), nawet w trybie sprawiedliwym
         return tryAcquire();
     }
 
@@ -154,28 +138,16 @@ public final class VarHandleLock implements Lock {
         if (Thread.interrupted()) throw new InterruptedException();
         if (canBarge() && tryAcquire()) return true;
         long deadline = System.nanoTime() + unit.toNanos(timeout);
-        if (deadline == 0L) deadline = 1L;                // 0 is the "no deadline" sentinel
+        if (deadline == 0L) deadline = 1L;                // 0 to znacznik „bez terminu”
         return acquireQueued(true, deadline);
     }
 
-    /** A fair lock refuses the queue-jumping fast path while anybody is waiting. */
     private boolean canBarge() {
         return !fair || waiters.isEmpty() || OWNER.getVolatile(this) == Thread.currentThread();
     }
 
-    // ---------- the slow path: enqueue, re-check, park ----------
+    // ---------- wolna ścieżka: kolejka, ponowne sprawdzenie, parkowanie ----------
 
-    /**
-     * Enqueue, then loop: only the head competes for the lock, so the queue is FIFO once entered.
-     *
-     * <p>The ordering here is the correctness argument. {@code waiters.add} happens <b>before</b> the
-     * first {@code tryAcquire}, so a release that runs in between is guaranteed to see this thread
-     * in the queue and unpark it; and the {@code tryAcquire} happens <b>before</b> the park, so a
-     * release that ran before the enqueue is caught by the re-check instead. There is no third case.
-     *
-     * @param deadline absolute {@link System#nanoTime()} deadline, or 0 for none
-     * @return true if the lock was acquired; false only when a deadline passed
-     */
     private boolean acquireQueued(boolean interruptible, long deadline) throws InterruptedException {
         Thread me = Thread.currentThread();
         waiters.add(me);
@@ -189,7 +161,7 @@ public final class VarHandleLock implements Lock {
                 }
                 if (Thread.interrupted()) {
                     if (interruptible) throw new InterruptedException();
-                    interrupted = true;            // lock() defers it rather than acting on it
+                    interrupted = true;            // lock() odkłada przerwanie, zamiast na nie reagować
                 }
                 if (deadline == 0L) {
                     LockSupport.park(this);
@@ -201,36 +173,35 @@ public final class VarHandleLock implements Lock {
             }
         } finally {
             waiters.remove(me);
-            if (!acquired) unparkHead();           // we may have been holding a signal meant for us
-            if (interrupted) me.interrupt();       // ...and lock() hands the interrupt back
+            if (!acquired) unparkHead();           // mogliśmy trzymać sygnał przeznaczony dla nas
+            if (interrupted) me.interrupt();       // ...a lock() oddaje przerwanie z powrotem
         }
     }
 
-    // ---------- release ----------
+    // ---------- zwolnienie ----------
 
     @Override
     public void unlock() {
         if (OWNER.getVolatile(this) != Thread.currentThread()) {
             throw new IllegalMonitorStateException("this thread does not hold " + this);
         }
-        int remaining = (int) STATE.get(this) - 1;     // plain: nobody else may touch it while held
+        int remaining = (int) STATE.get(this) - 1;     // zwykły zapis: nikt inny nie może go ruszać, dopóki blokada jest zajęta
         if (remaining > 0) {
             STATE.set(this, remaining);
             return;
         }
-        OWNER.setVolatile(this, null);                 // clear the owner *before* opening the gate
-        STATE.setVolatile(this, 0);                    // the release: publishes the critical section
+        OWNER.setVolatile(this, null);                 // wyczyść właściciela *przed* otwarciem bramy
+        STATE.setVolatile(this, 0);                    // zwolnienie: publikuje sekcję krytyczną
         unparkHead();
     }
 
     private void unparkHead() {
         Thread head = waiters.peek();
-        if (head != null) LockSupport.unpark(head);    // sticky: safe even if it has not parked yet
+        if (head != null) LockSupport.unpark(head);    // zezwolenie się zachowuje: bezpieczne, nawet jeśli wątek jeszcze nie zaparkował
     }
 
-    // ---------- monitoring, for tests and for toString ----------
+    // ---------- podgląd stanu, dla testów i toString ----------
 
-    /** True when any thread holds it. Not a basis for a decision — it can change as you read it. */
     public boolean isLocked() {
         return (int) STATE.getVolatile(this) != 0;
     }
@@ -239,7 +210,6 @@ public final class VarHandleLock implements Lock {
         return OWNER.getVolatile(this) == Thread.currentThread();
     }
 
-    /** Holds by the <em>current</em> thread — the only thread that may read the count safely. */
     public int getHoldCount() {
         return isHeldByCurrentThread() ? (int) STATE.get(this) : 0;
     }
@@ -260,11 +230,6 @@ public final class VarHandleLock implements Lock {
         return waiters.size();
     }
 
-    /**
-     * Always throws. A {@link Condition} has to release every hold, park on a second queue, and
-     * transfer the waiter back onto this one before returning — a protocol of its own rather than a
-     * few more lines here. {@code StampedLock} refuses for the same reason.
-     */
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException("VarHandleLock has no conditions — use ReentrantLock");
