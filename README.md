@@ -1,4 +1,4 @@
-# algorith-drills
+# algorithm-drills
 
 Ćwiczenia z algorytmów w Javie 25: każde ma kod, testy i notatkę wyjaśniającą wybory. Notatki do
 zadań rekrutacyjnych mają tę samą budowę: treść, tabelę założeń, rozwiązanie, dlaczego ten algorytm,
