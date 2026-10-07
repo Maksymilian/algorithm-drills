@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>drill</groupId>
-    <artifactId>algorith-drills</artifactId>
+    <artifactId>algorithm-drills</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -44,6 +44,19 @@
         </dependency>
     </dependencies>
 
+    <!-- mvn deploy publikuje do GitHub Packages (rejestr Maven przy repozytorium); id "github" to
+         serwer, któremu actions/setup-java wpisuje GITHUB_TOKEN do settings.xml. Zob. build.yml. -->
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/Maksymilian/algorithm-drills</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/Maksymilian/algorithm-drills</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <build>
         <!-- keeps the existing IntelliJ layout: sources in src/java, tests in test/java -->
         <sourceDirectory>src/java</sourceDirectory>
@@ -53,6 +66,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>--add-modules</arg>
+                        <arg>jdk.incubator.vector</arg>
+                    </compilerArgs>
+                </configuration>
                 <executions>
                     <!-- JMH generates its harness with an annotation processor. Since JDK 23 javac runs
                          processors only when asked, so it is named explicitly, for the tests only. -->
@@ -76,8 +95,27 @@
                 <version>3.5.4</version>
                 <configuration>
                     <!-- the large-set tests are only meaningful on a heap too small to hold them -->
-                    <argLine>-Xmx512m</argLine>
+                    <argLine>-Xmx512m --add-modules jdk.incubator.vector</argLine>
                 </configuration>
+            </plugin>
+            <!-- obok jar z klasami publikujemy jar ze źródłami: IDE pokaże je przy debugowaniu -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.4</version>
             </plugin>
         </plugins>
     </build>

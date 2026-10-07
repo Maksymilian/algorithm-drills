@@ -25,7 +25,7 @@ CONSOLE_VERSION=6.1.3
 CONSOLE_JAR="$HOME/.m2/repository/org/junit/platform/junit-platform-console-standalone/$CONSOLE_VERSION/junit-platform-console-standalone-$CONSOLE_VERSION.jar"
 
 # Same heap as surefire's argLine: some tests are only meaningful on a heap this small.
-DEFAULT_JAVA_OPTS=(-Xmx512m)
+DEFAULT_JAVA_OPTS=(-Xmx512m --add-modules jdk.incubator.vector)
 
 ensure_built() {
     local stamp="$ROOT/target/test-classes"

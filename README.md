@@ -82,6 +82,8 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [`Gatherers.mapConcurrent` i semafor, który dzieli po równo](docs/jdk/map-concurrent-and-equal-share-semaphore.md)
 - [Trzy blokady: `ReentrantLock`, `StampedLock` i jedna zbudowana z `VarHandle`](docs/jdk/locks-reentrant-stamped-and-varhandle.md)
 - [Listy typu prostego `int`: fastutil, Eclipse Collections i zwykłe `int[]`, zmierzone](docs/jdk/primitive-int-lists.md)
+- [Ten procesor i SIMD: AVX2, `IntVector` i co z tego ma JVM](docs/jdk/int-vector-and-this-cpu.md)
+- [`String` to tablica bajtów: Compact Strings i ile oszczędza Latin-1](docs/jdk/compact-strings.md)
 - Bez notatek: [`TeeingCollectorExample`](src/java/jdk/TeeingCollectorExample.java) (`Collectors.teeing`)
 
 ## Narzędzia
