@@ -22,6 +22,7 @@ do których prowadzą linki.
 | „każdy element zależy od maksimum po lewej i po prawej” | maksima prefiksowe, potem dwa wskaźniki | O(n), O(1) pamięci | [śnieg między wzgórzami](array/trapping-water.md) |
 | „kup, potem sprzedaj”, „najlepsza para i < j” | minimum dotąd + najlepsza różnica | O(n) | [zysk z akcji](array/stock-max-profit.md) |
 | „maksimum / minimum w każdym oknie” | kolejka monotoniczna | O(n) | [maksimum w oknie](array/sliding-window-maximum.md) |
+| „suma stałego kształtu w siatce”, mały kształt | przejrzyj wszystkie zaczepienia, stałe odczyty | O(h · w) | [klepsydra](array/hourglass-sum.md) |
 | „k największych / najczęstszych” | kopiec minimalny o rozmiarze k | O(n log k) | [top-k słów](collection/top-k-frequent-words.md) |
 | „ile przedziałów naraz”, „ile sal” | sortowanie + kopiec końców albo zamiatanie +1 / −1 | O(n log n) | [sale na spotkania](collection/meeting-rooms.md) |
 | „wartość w chwili t”, „najbliższy w dół / w górę” | `TreeMap.floorEntry` / `ceilingEntry` | O(log n) | [historia klucza](collection/time-map.md) |

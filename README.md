@@ -30,6 +30,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Śnieg między wzgórzami / woda po deszczu: tablice, dwa wskaźniki i stos na `ArrayDeque`](docs/array/trapping-water.md)
 - [Największy zysk z akcji: minimum dotąd, ceny jako `BigDecimal`](docs/array/stock-max-profit.md)
 - [Maksimum w przesuwanym oknie: kolejka monotoniczna na `ArrayDeque`](docs/array/sliding-window-maximum.md)
+- [Klepsydra w tablicy 2D: stały kształt, siedem odczytów i maksimum od `MIN_VALUE`](docs/array/hourglass-sum.md)
 - Bez notatek: [`SecondLowestInArrayMain`](src/java/array/SecondLowestInArrayMain.java),
   [`MedianWithoutMerging`](src/java/array/MedianWithoutMerging.java) (mediana dwóch posortowanych tablic)
 
