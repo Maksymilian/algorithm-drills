@@ -32,6 +32,7 @@ do których prowadzą linki.
 | „najkrótsza droga”, wszystkie wagi równe | BFS na `ArrayDeque` | O(V + E) | [Dijkstra](graph/shortest-path.md), dopytania |
 | „czy da się ułożyć z liter”, mały alfabet | licznik `int[26]` | O(długość) | [słowa z liter](string/longest-words-from-letters.md) |
 | „bez pamięci dynamicznej”, mały alfabet | maski bitowe w `int` / `long` | O(n), O(1) | [pierwsza unikalna](string/first-unique-letter.md) |
+| „nawiasy / tagi zrównoważone”, „pasuje do ostatniego otwartego” | stos na `ArrayDeque` | O(n) | [nawiasy](string/balanced-brackets.md) |
 | „wiele zapytań o ten sam tekst” | zbuduj indeks raz, odpowiadaj z indeksu | O(log n + wynik) | [prefiksy](string/word-prefix-positions.md), [najbliższe słowa](string/closest-words.md) |
 | „obsłuż żądania po drodze” | LOOK: sortowany zbiór, jedź, dopóki coś jest przed tobą | O(log n) na krok | [windy](greedy/simple-elevators.md) |
 | „indeks następnego elementu”, „cykl” | żółw i zając (Floyd) | O(n), O(1) | [cykl w tablicy](array/next-index-cycle.md) |

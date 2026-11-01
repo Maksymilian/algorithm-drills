@@ -40,6 +40,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Pozycje słów z prefiksem, bez regex: jeden skan i indeks na `TreeMap`](docs/string/word-prefix-positions.md)
 - [Najbliższe dwa słowa w tekście: jedno przejście i scalanie list pozycji](docs/string/closest-words.md)
 - [Pierwsza unikalna litera bez alokacji: dwie maski bitowe](docs/string/first-unique-letter.md)
+- [Zrównoważone nawiasy: stos na `ArrayDeque`, a nie porównanie końców](docs/string/balanced-brackets.md)
 
 ## collection
 
