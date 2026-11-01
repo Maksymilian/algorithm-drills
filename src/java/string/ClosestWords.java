@@ -1,97 +1,74 @@
 package string;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.regex.Pattern;
 
 /// Najmniejsza odległość między dwoma słowami w długim tekście.
 ///
 /// **Treść.** Odległość liczymy w słowach: sąsiednie słowa są w odległości 1. W tekście
 /// „a b c a d b” słowa `a` i `b` są najbliżej na pozycjach 0 i 1, w odległości 1.
 ///
-/// **Pomysł.** Jedno przejście. Pamiętamy ostatnią pozycję słowa A i ostatnią pozycję słowa B.
-/// Przy każdym trafieniu porównujemy się z ostatnim wystąpieniem drugiego słowa. Dalszych wystąpień
-/// nie trzeba sprawdzać, bo ostatnie jest zawsze najbliżej.
+/// **Pomysł.** Jedno przejście, pamiętamy tylko pozycję **poprzedniego trafienia** (słowa A albo B).
+/// Jeśli poprzednie trafienie to drugie słowo, mamy parę i liczymy odległość. Jeśli to samo słowo,
+/// pomijamy: np. w „A … B … B” drugie `B` jest dalej od `A` niż pierwsze, a parę `A`–pierwsze `B`
+/// już policzyliśmy. Wcześniejszych wystąpień nie trzeba więc pamiętać.
 ///
 /// **Złożoność.** O(n) czasu i O(1) pamięci poza samymi słowami.
 ///
-/// **Dopytania.**
-///
-/// - **Ten sam tekst, wiele zapytań:** raz budujemy [Index], czyli mapę ze słowa na
-///    posortowaną listę pozycji. Zapytanie to scalanie dwóch posortowanych list dwoma wskaźnikami,
-///    O(|A| + |B|). Wyniki dla par można trzymać w cache.
-///
-/// - **A == B:** najmniejsza odległość między dwoma kolejnymi wystąpieniami.
-///
 /// - **Słowa nie ma:** zwracamy −1.
+/// - **Błędne parametry:** `null` zamiast tekstu albo słowa, puste słowo i słowo ze znakiem spoza
+///   liter i cyfr (`"ala ma"`, `"kot!"`) to `IllegalArgumentException`. Takie słowo nigdy by nie
+///   trafiło, bo podział tekstu rozcina je na części, więc cichy wynik −1 ukrywałby błąd.
 public class ClosestWords {
 
     private static final int NONE = Integer.MAX_VALUE;
+    private static final int NOT_SEEN = -1;
+
+    private static final Pattern SEPARATORS = Pattern.compile("[^\\p{L}\\p{N}]+");
 
     public static int closest(String text, String a, String b) {
-        return closest(words(text), normalize(a), normalize(b));
+        if (text == null) {
+            throw new IllegalArgumentException("brak tekstu");
+        }
+        return closest(words(text), requireWord(a), requireWord(b));
+    }
+
+    // słowo z separatorem („ala ma”, „kot!”) nigdy nie trafi, bo podział tekstu je rozcina
+    private static String requireWord(String word) {
+        if (word == null || word.isEmpty() || SEPARATORS.matcher(word).find()) {
+            throw new IllegalArgumentException("szukane słowo musi być niepuste, z samych liter i cyfr: " + word);
+        }
+        return normalize(word);
     }
 
     static int closest(String[] words, String a, String b) {
-        int lastA = -1, lastB = -1, best = NONE;
+        int best = NONE;
+        int previousHit = NOT_SEEN;
         for (int i = 0; i < words.length; i++) {
-            boolean isA = words[i].equals(a), isB = words[i].equals(b);
-            best = Math.min(best, Math.min(gap(isA, i, lastB), gap(isB, i, lastA)));
-            lastA = isA ? i : lastA;
-            lastB = isB ? i : lastB;
+            if (isSearched(words[i], a, b)) {
+                best = Math.min(best, distance(words, previousHit, i, a.equals(b)));
+                previousHit = i;
+            }
         }
         return best == NONE ? -1 : best;
     }
 
-    private static int gap(boolean hit, int i, int lastOther) {
-        return hit && lastOther >= 0 ? i - lastOther : NONE;
+    private static boolean isSearched(String word, String a, String b) {
+        return word.equals(a) || word.equals(b);
     }
 
-    public static final class Index {
-        private final Map<String, List<Integer>> positions = new HashMap<>();
-
-        public Index(String text) {
-            String[] words = words(text);
-            for (int i = 0; i < words.length; i++) {
-                positions.computeIfAbsent(words[i], w -> new ArrayList<>()).add(i);   // rosnąco
-            }
+    // dwa trafienia tym samym słowem nie tworzą pary, chyba że szukamy a == b
+    private static int distance(String[] words, int previousHit, int i, boolean sameWord) {
+        if (previousHit == NOT_SEEN) {
+            return NONE;
         }
-
-        public int closest(String a, String b) {
-            List<Integer> pa = positionsOf(a), pb = positionsOf(b);
-            int best = pa == pb ? closestRepeat(pa) : closestMerge(pa, pb);   // to samo słowo?
-            return best == NONE ? -1 : best;
-        }
-
-        private List<Integer> positionsOf(String word) {
-            return positions.getOrDefault(normalize(word), List.of());
-        }
-    }
-
-    private static int closestRepeat(List<Integer> p) {
-        int best = NONE;
-        for (int i = 1; i < p.size(); i++) {
-            best = Math.min(best, p.get(i) - p.get(i - 1));
-        }
-        return best;
-    }
-
-    private static int closestMerge(List<Integer> pa, List<Integer> pb) {
-        int best = NONE, i = 0, j = 0;
-        while (i < pa.size() && j < pb.size()) {
-            int x = pa.get(i), y = pb.get(j);
-            best = Math.min(best, Math.abs(x - y));
-            i += x < y ? 1 : 0;
-            j += x < y ? 0 : 1;
-        }
-        return best;
+        boolean pair = sameWord || !words[previousHit].equals(words[i]);
+        return pair ? i - previousHit : NONE;
     }
 
     static String[] words(String text) {
-        return Arrays.stream(text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
+        return Arrays.stream(SEPARATORS.split(text.toLowerCase(Locale.ROOT)))
                 .filter(w -> !w.isEmpty())
                 .toArray(String[]::new);
     }
@@ -103,6 +80,5 @@ public class ClosestWords {
     void main() {
         String text = "Ala ma kota, a kot ma Alę. Kot lubi mleko, a Ala lubi kota.";
         IO.println(closest(text, "ala", "kota"));            // 2
-        IO.println(new Index(text).closest("kot", "lubi"));   // 1
     }
 }
