@@ -23,13 +23,13 @@ do których prowadzą linki.
 | „kup, potem sprzedaj”, „najlepsza para i < j” | minimum dotąd + najlepsza różnica | O(n) | [zysk z akcji](array/stock-max-profit.md) |
 | „maksimum / minimum w każdym oknie” | kolejka monotoniczna | O(n) | [maksimum w oknie](array/sliding-window-maximum.md) |
 | „suma stałego kształtu w siatce”, mały kształt | przejrzyj wszystkie zaczepienia, stałe odczyty | O(h · w) | [klepsydra](array/hourglass-sum.md) |
-| „k największych / najczęstszych” | kopiec minimalny o rozmiarze k | O(n log k) | [top-k słów](collection/top-k-frequent-words.md) |
-| „ile przedziałów naraz”, „ile sal” | sortowanie + kopiec końców albo zamiatanie +1 / −1 | O(n log n) | [sale na spotkania](collection/meeting-rooms.md) |
+| „k największych / najczęstszych” | min-heap o rozmiarze k | O(n log k) | [top-k słów](collection/top-k-frequent-words.md) |
+| „ile przedziałów naraz”, „ile sal” | sortowanie + heap końców albo zamiatanie +1 / −1 | O(n log n) | [sale na spotkania](collection/meeting-rooms.md) |
 | „wartość w chwili t”, „najbliższy w dół / w górę” | `TreeMap.floorEntry` / `ceilingEntry` | O(log n) | [historia klucza](collection/time-map.md) |
 | „losuj z wagami” | sumy prefiksowe + wyszukiwanie binarne | O(log k) na losowanie | [losowy znak](collection/weighted-random-char.md) |
 | „get i put w O(1), wyrzucaj najstarszy” | `HashMap` + lista dwukierunkowa | O(1) | [LRU](collection/lru-cache.md) |
 | „sortuj po X malejąco, przy remisie po Y” | `Comparator.comparingInt(...).reversed().thenComparing(...)`, nigdy odejmowanie | O(n log n) | [komparator](collection/checker.md) |
-| „najkrótsza droga”, wagi ≥ 0 | Dijkstra na kopcu | O((V + E) log V) | [Dijkstra](graph/shortest-path.md) |
+| „najkrótsza droga”, wagi ≥ 0 | Dijkstra na heapie | O((V + E) log V) | [Dijkstra](graph/shortest-path.md) |
 | „najkrótsza droga”, wszystkie wagi równe | BFS na `ArrayDeque` | O(V + E) | [Dijkstra](graph/shortest-path.md), dopytania |
 | „czy da się ułożyć z liter”, mały alfabet | licznik `int[26]` | O(długość) | [słowa z liter](string/longest-words-from-letters.md) |
 | „bez pamięci dynamicznej”, mały alfabet | maski bitowe w `int` / `long` | O(n), O(1) | [pierwsza unikalna](string/first-unique-letter.md) |
@@ -73,7 +73,7 @@ do których prowadzą linki.
 
 - **O(1) to nie wszystko.** `ArrayDeque` i `LinkedList` mają te same złożoności, ale tablica jest
   ciągła w pamięci i nie alokuje węzła na każdy element.
-- **Kopiec minimalny o rozmiarze k, nie maksymalny ze wszystkim.** Na szczycie jest najsłabszy z
+- **Min-heap o rozmiarze k, nie max-heap ze wszystkim.** Na szczycie jest najsłabszy z
   najlepszych, więc łatwo go wymienić. Pamięć O(k), a nie O(n).
 - **`PriorityQueue` nie ma decrease-key.** Wkładaj nowy wpis, a nieaktualny pomijaj przy zdjęciu
   (leniwe usuwanie). ([Dijkstra](graph/shortest-path.md))
@@ -119,7 +119,7 @@ do których prowadzą linki.
 | małego zbioru z małym alfabetem | maska bitowa / `int[26]` | O(1) | bez obiektów |
 | dostępu z wielu wątków | `ConcurrentHashMap`, `ConcurrentSkipListMap` | jak wyżej | skip-lista to współbieżny odpowiednik `TreeMap` |
 
-Koszt każdej operacji (listy, mapy, kopiec, napisy, strumienie, pamięć na element) i jak wyznaczyć
+Koszt każdej operacji (listy, mapy, heap, napisy, strumienie, pamięć na element) i jak wyznaczyć
 O() krok po kroku: [złożoność operacji na kolekcjach](collections-complexity.md).
 
 ## Ile danych zniesie dana złożoność
@@ -131,7 +131,7 @@ Typowa ocena „na oko”: około 10⁸ prostych operacji na sekundę.
 | ≤ 20 | O(2ⁿ), O(n · 2ⁿ) | wszystkie podzbiory |
 | ≤ 500 | O(n³) | Floyd-Warshall |
 | ≤ 5 000 | O(n²) | każda para |
-| ≤ 10⁶ | O(n log n) | sortowanie, kopiec, `TreeMap` |
+| ≤ 10⁶ | O(n log n) | sortowanie, heap, `TreeMap` |
 | ≤ 10⁸ | O(n) | jedno przejście |
 | więcej | O(log n), O(1) na zapytanie | indeks przygotowany wcześniej |
 

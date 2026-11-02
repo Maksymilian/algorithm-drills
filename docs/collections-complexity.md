@@ -66,7 +66,7 @@ niż k krokach.
 | `Arrays.fill` | O(n) | brak | brak |
 
 **Wybór:** prawie zawsze `ArrayList`. `LinkedList` wygrywa tylko przy usuwaniu przez iterator w
-środku, a do obu końców lepszy jest [`ArrayDeque`](#kolejki-stosy-i-kopce).
+środku, a do obu końców lepszy jest [`ArrayDeque`](#kolejki-stosy-i-heapy).
 
 ### Widoki i odwracanie
 
@@ -85,7 +85,7 @@ niż k krokach.
 - **`addFirst` w pętli na `ArrayList`** kosztuje razem O(n²), bo każde wstawienie przesuwa całą
   tablicę. Lepiej `add` na końcu i na koniec `reversed()`.
 
-## Kolejki, stosy i kopce
+## Kolejki, stosy i heapy
 
 ### `ArrayDeque`
 
@@ -106,17 +106,17 @@ Nie przyjmuje `null`. Lepszy niż `Stack` (synchronizowany, przestarzały) i ni�
 | `poll` / `remove()` | O(log n) |
 | `peek` | O(1) |
 | `remove(Object)` / `contains` | O(n) |
-| `new PriorityQueue<>(kolekcja)` | O(n), budowa kopca, nie n log n |
+| `new PriorityQueue<>(kolekcja)` | O(n), budowa heapa, nie n log n |
 | iteracja | O(n), **nieposortowana** |
 | opróżnienie przez `poll` | O(n log n) |
 
-- **Kopiec minimalny w tablicy.** Gwarantowane jest tylko to, że korzeń (`peek()`) jest najmniejszy
+- **Min-heap w tablicy.** Gwarantowane jest tylko to, że korzeń (`peek()`) jest najmniejszy
   według komparatora.
-- **Tylko kolejne `poll()` dają kolejność.** Wypisanie kopca albo `for`/`stream()` przechodzą
-  tablicę w kolejności kopca.
-- **Kopiec nie jest stabilny.** Remisy rozstrzyga tylko komparator.
-- **Kopiec maksymalny:** `new PriorityQueue<>(Comparator.reverseOrder())` albo `cmp.reversed()`.
-- **Ograniczenie rozmiaru do k zmienia koszt.** `poll()` po przekroczeniu k trzyma kopiec przy k + 1
+- **Tylko kolejne `poll()` dają kolejność.** Wypisanie heapa albo `for`/`stream()` przechodzą
+  tablicę w kolejności heapa.
+- **Heap nie jest stabilny.** Remisy rozstrzyga tylko komparator.
+- **Max-heap:** `new PriorityQueue<>(Comparator.reverseOrder())` albo `cmp.reversed()`.
+- **Ograniczenie rozmiaru do k zmienia koszt.** `poll()` po przekroczeniu k trzyma heap przy k + 1
   elementach, więc każda operacja kosztuje O(log k), a nie O(log n).
 
 ## Mapy i zbiory
@@ -191,7 +191,7 @@ listą jest w [LRU](collection/lru-cache.md).
 | `groupingBy(f, TreeMap::new, ...)` | O(n log m) | O(n) |
 | `toMap(k, v, merge)` | O(n) | O(m); bez `merge` duplikat rzuca `IllegalStateException` |
 | wpisy po wartości: `entrySet().stream().sorted(comparingByValue())` | O(m log m) | O(m) |
-| k największych po wartości przez kopiec ograniczony do k | O(m log k) | O(k) |
+| k największych po wartości przez heap ograniczony do k | O(m log k) | O(k) |
 | dwie sumy / „czy już to widziałem” | O(n) | O(n) |
 | `int[26]` zamiast `Map<Character, Integer>` dla a-z | O(n) | O(1), ok. 100 B zamiast kilobajtów |
 

@@ -36,8 +36,8 @@ krótsza. Potem relaksujemy jego krawędzie: jeśli przez niego do sąsiada jest
 | Algorytm | Czas | Kiedy |
 |---|---|---|
 | BFS | O(V + E) | Wszystkie wagi równe (np. liczba przesiadek) |
-| **Dijkstra z kopcem binarnym** | **O((V + E) log V)** | **Nieujemne wagi, graf rzadki (mapy dróg). Wybrane** |
-| Dijkstra na tablicy, bez kopca | O(V²) | Graf gęsty (E ≈ V²): wtedy szybszy niż z kopcem |
+| **Dijkstra z heapem binarnym** | **O((V + E) log V)** | **Nieujemne wagi, graf rzadki (mapy dróg). Wybrane** |
+| Dijkstra na tablicy, bez heapa | O(V²) | Graf gęsty (E ≈ V²): wtedy szybszy niż z heapem |
 | Bellman-Ford | O(V · E) | Ujemne wagi; wykrywa ujemne cykle |
 | Floyd-Warshall | O(V³) | Odległości między *wszystkimi* parami, mały graf |
 | A* | zależy od heurystyki | Jeden cel i dobra heurystyka (np. odległość w linii prostej) |
@@ -49,11 +49,11 @@ krótsza. Potem relaksujemy jego krawędzie: jeśli przez niego do sąsiada jest
   przejrzenie sąsiadów.
 - **`PriorityQueue<Visit>` z leniwym usuwaniem.** `PriorityQueue` nie umie zmniejszyć klucza
   (decrease-key), więc przy poprawie odległości wkładamy nowy wpis. Stary pomijamy przy
-  zdjęciu: `if (visit.distance() > dist[u]) continue`. Kopiec ma wtedy najwyżej E wpisów, a
+  zdjęciu: `if (visit.distance() > dist[u]) continue`. Heap ma wtedy najwyżej E wpisów, a
   log E ≤ 2 log V, więc złożoność się nie zmienia.
   - Alternatywa: `TreeSet<Visit>` z prawdziwym decrease-key (`remove` + `add`, oba O(log V)).
     Komparator musi wtedy rozstrzygać remisy po numerze wierzchołka. Inaczej dwa wierzchołki z tą
-    samą odległością są dla `TreeSet` „równe” i jeden znika. Łatwo o błąd, więc wybrałem kopiec.
+    samą odległością są dla `TreeSet` „równe” i jeden znika. Łatwo o błąd, więc wybrałem heap.
 - **`long[] dist` i `int[] previous`.** Wierzchołki to liczby 0..V−1, więc tablica zamiast
   `HashMap`: O(1) bez haszowania i bez opakowywania liczb w obiekty.
 - **`record Edge` i `record Visit`.** Czytelniejsze niż `long[]{odległość, wierzchołek}`, a

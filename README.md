@@ -46,7 +46,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 ## collection
 
 - [Pamięć podręczna LRU: `HashMap` i własna lista dwukierunkowa](docs/collection/lru-cache.md)
-- [k najczęstszych słów: `HashMap` i kopiec o rozmiarze k](docs/collection/top-k-frequent-words.md)
+- [k najczęstszych słów: `HashMap` i heap o rozmiarze k](docs/collection/top-k-frequent-words.md)
 - [Ile sal na spotkania: `PriorityQueue` i zamiatanie na `TreeMap`](docs/collection/meeting-rooms.md)
 - [Klucz → wartość z historią: `TreeMap.floorEntry`](docs/collection/time-map.md)
 - [Losowy znak o zadanym rozkładzie: sumy prefiksowe i wyszukiwanie binarne](docs/collection/weighted-random-char.md)

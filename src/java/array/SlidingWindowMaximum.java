@@ -23,7 +23,7 @@ import java.util.Deque;
 /// Pamięć O(k). Dla porównania: naiwnie O(n · k), a z `TreeMap` (wartość → licznik) O(n log k).
 ///
 /// **Dopytania.** Minimum: to samo z odwróconym porównaniem. Strumień danych: ta sama kolejka
-/// działa online, element po elemencie. Mediana w oknie: dwa kopce albo dwa `TreeSet`.
+/// działa online, element po elemencie. Mediana w oknie: dwa heapy albo dwa `TreeSet`.
 public class SlidingWindowMaximum {
 
     public static int[] maxInWindows(int[] a, int k) {

@@ -21,11 +21,11 @@ Dana jest lista spotkań z godziną rozpoczęcia i zakończenia. Ile najmniej sa
 | Kolejność | dowolna; nie zakładamy posortowania |
 | Wynik | liczba sal (= największa liczba spotkań trwających naraz) |
 
-## Rozwiązanie 1: sortowanie i kopiec końców
+## Rozwiązanie 1: sortowanie i heap końców
 
-Bierzemy spotkania według początku. Kopiec minimalny trzyma godziny zakończenia spotkań w
+Bierzemy spotkania według początku. Min-heap trzyma godziny zakończenia spotkań w
 zajętych salach. Jeśli najwcześniejsze zakończenie ≤ nowy start, ta sala jest wolna: zdejmujemy ją.
-Potem wkładamy koniec nowego spotkania. Rozmiar kopca na końcu to liczba sal.
+Potem wkładamy koniec nowego spotkania. Rozmiar heapa na końcu to liczba sal.
 
 ## Rozwiązanie 2: zamiatanie
 
@@ -39,7 +39,7 @@ znoszą, co zgadza się z przedziałami `[start, end)`.
 |---|---|---|
 | Licz trwające spotkania w każdej minucie | O(n · T) | Zależy od długości dnia, nie od liczby spotkań |
 | Każda para spotkań | O(n²) | Liczba nakładających się par to nie liczba sal |
-| **Sortowanie + kopiec końców** | **O(n log n)** | **Wybrane. Łatwo rozszerzyć o przydział konkretnych sal** |
+| **Sortowanie + heap końców** | **O(n log n)** | **Wybrane. Łatwo rozszerzyć o przydział konkretnych sal** |
 | **Zamiatanie na `TreeMap`** | **O(n log n)** | **Najkrótszy kod. Ta sama technika liczy np. maks. obciążenie serwera** |
 | Dwie posortowane tablice (starty, końce) + dwa wskaźniki | O(n log n) | Bez kolekcji, tylko tablice. Też bardzo dobre |
 
@@ -47,7 +47,7 @@ O(n log n) to dolna granica dla tego zadania, bo bez porządku czasowego się ni
 
 ## Dlaczego takie struktury danych
 
-- **`PriorityQueue<Integer>` (kopiec minimalny) na końce.** Interesuje nas tylko *najwcześniej*
+- **`PriorityQueue<Integer>` (min-heap) na końce.** Interesuje nas tylko *najwcześniej*
   zwalniana sala: `peek` w O(1), `poll` i `add` w O(log n). Posortowana lista wymagałaby
   wstawiania w środek, w O(n).
 - **`TreeMap<Integer, Integer>` w zamiataniu.** Robi dwie rzeczy naraz: `merge` łączy zdarzenia z tej
@@ -60,6 +60,6 @@ O(n log n) to dolna granica dla tego zadania, bo bez porządku czasowego się ni
 ## Dopytania
 
 - **Czy jedna osoba zdąży na wszystkie?** Posortuj i sprawdź sąsiadów (`canAttendAll`), O(n log n).
-- **Która sala dla którego spotkania?** Drugi kopiec z numerami wolnych sal; przy zwolnieniu
+- **Która sala dla którego spotkania?** Drugi heap z numerami wolnych sal; przy zwolnieniu
   oddajemy numer.
-- **Sal jest tylko k, spotkania czekają?** Symulacja zdarzeń z kopcem `(czas zwolnienia, sala)`.
+- **Sal jest tylko k, spotkania czekają?** Symulacja zdarzeń z heapem `(czas zwolnienia, sala)`.

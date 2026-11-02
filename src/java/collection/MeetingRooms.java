@@ -12,10 +12,10 @@ import java.util.TreeMap;
 /// drugie może zacząć się o 10:00 w tej samej sali. Ile sal trzeba, żeby żadne dwa spotkania w
 /// jednej sali się nie nakładały? Dla `[0,30) [5,10) [15,20)` są potrzebne **2** sale.
 ///
-/// **Pomysł 1: sortowanie i kopiec końców ([PriorityQueue]).** Bierzemy spotkania według
-/// początku. Kopiec trzyma godziny zakończenia spotkań w zajętych salach, z najwcześniejszą na
+/// **Pomysł 1: sortowanie i heap końców ([PriorityQueue]).** Bierzemy spotkania według
+/// początku. heap trzyma godziny zakończenia spotkań w zajętych salach, z najwcześniejszą na
 /// szczycie. Jeśli najwcześniejsze zakończenie wypada nie później niż nowy start, sala jest wolna:
-/// zdejmujemy ją z kopca. Potem wkładamy koniec nowego spotkania. Rozmiar kopca na końcu to
+/// zdejmujemy ją z heapa. Potem wkładamy koniec nowego spotkania. Rozmiar heapa na końcu to
 /// liczba sal.
 ///
 /// **Pomysł 2: zamiatanie ([TreeMap]).** W chwili `start` liczba trwających spotkań
@@ -26,7 +26,7 @@ import java.util.TreeMap;
 /// **Złożoność.** Obie wersje O(n log n) czasu i O(n) pamięci.
 ///
 /// **Dopytania.** Czy jedna osoba zdąży na wszystkie? Sortujemy i sprawdzamy sąsiadów, czyli
-/// [#canAttendAll]. Która sala dla którego spotkania? Drugi kopiec z numerami wolnych sal.
+/// [#canAttendAll]. Która sala dla którego spotkania? Drugi heap z numerami wolnych sal.
 public class MeetingRooms {
 
     public record Meeting(int start, int end) {

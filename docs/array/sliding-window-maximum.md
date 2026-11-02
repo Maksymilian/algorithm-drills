@@ -39,7 +39,7 @@ dla każdego i:
 |---|---|---|---|
 | Przejrzyj każde okno | O(n · k) | O(1) | Dla n = 10⁶, k = 10⁴ to 10¹⁰ operacji |
 | `TreeMap<wartość, licznik>` jako multizbiór | O(n log k) | O(k) | Dobre i proste. Działa też dla mediany |
-| Kopiec z leniwym usuwaniem | O(n log n) | O(n) | Stare elementy zalegają w kopcu |
+| Heap z leniwym usuwaniem | O(n log n) | O(n) | Stare elementy zalegają w heapie |
 | Bloki po k: maksima prefiksowe i sufiksowe | O(n) | O(n) | Sprytne, ale trudniej je wytłumaczyć |
 | **Kolejka monotoniczna** | **O(n)** | **O(k)** | **Wybrane** |
 
@@ -61,5 +61,5 @@ raz z niej wychodzi. Łącznie to najwyżej 2n operacji (analiza zamortyzowana).
 ## Dopytania
 
 - **Minimum?** To samo z odwróconym porównaniem.
-- **Mediana w oknie?** Dwa `TreeSet`/kopce (dolna i górna połowa), O(n log k).
+- **Mediana w oknie?** Dwa `TreeSet`/heapy (dolna i górna połowa), O(n log k).
 - **Dane jako strumień?** Ta sama kolejka działa element po elemencie.
