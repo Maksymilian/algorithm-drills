@@ -6,7 +6,7 @@ package recursion;
 ///
 /// | Metoda | Dodawania | Wywołania | Sterta | Stos |
 /// |---|---|---|---|---|
-/// | [#fibonacci(int)] | **F(n+1) - 1** | **2F(n+1) - 1** | nic | n ramek |
+/// | [#naive(int)] | **F(n+1) - 1** | **2F(n+1) - 1** | nic | n ramek |
 /// | [#fibonacciMemoized(int)] | n - 1 | 2n - 1 | 8(n+1) bajtów | n ramek |
 /// | [#fibonacciIterative(int)] | n | 1 | **nic** | **1 ramka** |
 ///
@@ -47,14 +47,9 @@ package recursion;
 /// rejestrze.
 public class Fibonacci {
 
-    public static final int LARGEST_IN_A_LONG = 92;
+    public static final int LARGEST_IN_A_LONG = maxFibonacciN();
 
-    public static long fibonacci(int n) {
-        requireInRange(n);
-        return naive(n);
-    }
-
-    private static long naive(int n) {
+    public static long naive(int n) {
         return n <= 1 ? n : naive(n - 1) + naive(n - 2);
     }
 
@@ -64,7 +59,7 @@ public class Fibonacci {
     }
 
     private static long memoized(int n, long[] known) {
-        if (n <= 1) return n;                        // F(0) i F(1) nie są zapisywane: 0 znaczy „nieznane”
+        if (n <= 1) return n;
         if (known[n] != 0) return known[n];
         return known[n] = memoized(n - 1, known) + memoized(n - 2, known);
     }
@@ -93,6 +88,20 @@ public class Fibonacci {
         }
     }
 
-    private Fibonacci() {
+    void main() {
+        System.out.printf("Maximum index for Fibonacci is %s", maxFibonacciN());
     }
+    private static int maxFibonacciN() {
+        long previous = 0;
+        long current = 1;
+        int index = 1;
+        while (current <= Long.MAX_VALUE - previous) {   // previous + current still fits
+            index++;
+            long next = previous + current;
+            previous = current;
+            current = next;
+        }
+        return index;
+    }
+
 }

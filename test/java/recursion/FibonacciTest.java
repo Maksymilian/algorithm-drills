@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static recursion.Fibonacci.LARGEST_IN_A_LONG;
-import static recursion.Fibonacci.fibonacci;
+import static recursion.Fibonacci.naive;
 import static recursion.Fibonacci.fibonacciIterative;
 import static recursion.Fibonacci.fibonacciMemoized;
 
@@ -45,7 +45,7 @@ class FibonacciTest {
             assertEquals(want, fibonacciMemoized(n), "memoized F(" + n + ")");
             assertEquals(want, fibonacciIterative(n), "iterative F(" + n + ")");
             if (n <= NAIVE_LIMIT) {
-                assertEquals(want, fibonacci(n), "naive F(" + n + ")");
+                assertEquals(want, naive(n), "naive F(" + n + ")");
             }
         }
     }
@@ -55,8 +55,8 @@ class FibonacciTest {
         assertEquals(0, fibonacciIterative(0));
         assertEquals(1, fibonacciIterative(1));
         assertEquals(1, fibonacciIterative(2));
-        assertEquals(55, fibonacci(10));
-        assertEquals(6765, fibonacci(20));
+        assertEquals(55, naive(10));
+        assertEquals(6765, naive(20));
         assertEquals(12586269025L, fibonacciMemoized(50));
         assertEquals(7540113804746346429L, fibonacciMemoized(LARGEST_IN_A_LONG));
     }
@@ -83,7 +83,6 @@ class FibonacciTest {
     @Test
     void rejectsWhatItCannotAnswer() {
         for (int n : new int[]{-1, -2, Integer.MIN_VALUE, 93, 1_000, Integer.MAX_VALUE}) {
-            assertThrows(IllegalArgumentException.class, () -> fibonacci(n), "naive at " + n);
             assertThrows(IllegalArgumentException.class, () -> fibonacciMemoized(n), "memoized at " + n);
             assertThrows(IllegalArgumentException.class, () -> fibonacciIterative(n), "iterative at " + n);
         }
@@ -123,7 +122,7 @@ class FibonacciTest {
         BigInteger[] expected = sequenceUpTo(NAIVE_LIMIT);
 
         for (int n = 0; n <= NAIVE_LIMIT; n++) {
-            assertEquals(expected[n].longValueExact(), fibonacci(n), "naive F(" + n + ")");
+            assertEquals(expected[n].longValueExact(), naive(n), "naive F(" + n + ")");
         }
     }
 }
