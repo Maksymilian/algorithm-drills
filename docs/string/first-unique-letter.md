@@ -18,7 +18,7 @@ W napisie znajdź pierwszą literę, która występuje dokładnie raz. Nie aloku
 | Alfabet | litery a–z; `A` i `a` to ta sama litera; inne znaki pomijamy |
 | „Bez pamięci dynamicznej” | żadnego `new`, żadnej kolekcji: tylko zmienne lokalne typów prostych (na stosie) |
 | Wynik | indeks w napisie albo −1 (także dla pustego napisu i napisu bez liter) |
-| `null` | `IllegalArgumentException`; wyjątek tworzy obiekt, ale tylko przy błędnym wywołaniu |
+| `null` | `NullPointerException` (`Objects.requireNonNull`); wyjątek tworzy obiekt, ale tylko przy błędnym wywołaniu |
 
 ## Rozwiązanie
 

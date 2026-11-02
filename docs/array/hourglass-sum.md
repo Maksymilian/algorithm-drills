@@ -19,7 +19,8 @@ Tablica 6 × 6 ma 16 klepsydr. Policz sumę każdej i zwróć największą. Wart
 |---|---|
 | Rozmiar | dowolny prostokąt h × w, co najmniej 3 × 3 (zadanie: zawsze 6 × 6) |
 | Wartości ujemne | tak, dlatego maksimum startuje od `Integer.MIN_VALUE` |
-| Tablica za mała, wiersze różnej długości, `null` zamiast tablicy | `IllegalArgumentException` |
+| Tablica za mała, wiersze różnej długości | `IllegalArgumentException` |
+| `null` zamiast tablicy | `NullPointerException` |
 | `null` jako wartość pola | liczy się jako 0 (`Objects.requireNonNullElse`); `Integer::intValue` rzuciłby `NullPointerException` |
 | Przepełnienie | niemożliwe: 7 · 9 = 63 |
 

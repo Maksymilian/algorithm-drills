@@ -1,5 +1,6 @@
 package jdk;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -13,7 +14,9 @@ public class TeeingCollectorExample {
     record Order(String customer, String category, double amount) {}
 
     record Range(double min, double max) {
-        double spread() { return max - min; }
+        double spread() {
+            return max - min;
+        }
     }
 
     record Summary(long count, double total, double average, Range range) {}
@@ -22,8 +25,8 @@ public class TeeingCollectorExample {
 
     static Range minMax(List<Order> orders) {
         return orders.stream().collect(Collectors.teeing(
-                Collectors.minBy((a, b) -> Double.compare(a.amount(), b.amount())),
-                Collectors.maxBy((a, b) -> Double.compare(a.amount(), b.amount())),
+                Collectors.minBy(Comparator.comparingDouble(Order::amount)),
+                Collectors.maxBy(Comparator.comparingDouble(Order::amount)),
                 (min, max) -> new Range(
                         min.map(Order::amount).orElse(Double.NaN),
                         max.map(Order::amount).orElse(Double.NaN))));
@@ -45,8 +48,8 @@ public class TeeingCollectorExample {
                         Collectors.summingDouble(Order::amount),
                         (count, total) -> new double[]{count, total}),
                 Collectors.teeing(
-                        Collectors.minBy((a, b) -> Double.compare(a.amount(), b.amount())),
-                        Collectors.maxBy((a, b) -> Double.compare(a.amount(), b.amount())),
+                        Collectors.minBy(Comparator.comparingDouble(Order::amount)),
+                        Collectors.maxBy(Comparator.comparingDouble(Order::amount)),
                         (min, max) -> new Range(
                                 min.map(Order::amount).orElse(0.0),
                                 max.map(Order::amount).orElse(0.0))),

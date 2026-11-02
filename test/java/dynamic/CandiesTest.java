@@ -70,10 +70,10 @@ class CandiesTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> candies((int[]) null));
-        assertThrows(IllegalArgumentException.class, () -> candiesWithTable(null));
-        assertThrows(IllegalArgumentException.class, () -> candies((IntStream) null));
-        assertThrows(IllegalArgumentException.class, () -> candies(0, null));
+        assertThrows(NullPointerException.class, () -> candies((int[]) null));
+        assertThrows(NullPointerException.class, () -> candiesWithTable(null));
+        assertThrows(NullPointerException.class, () -> candies((IntStream) null));
+        assertThrows(NullPointerException.class, () -> candies(0, null));
         assertThrows(NullPointerException.class, () -> candies(2, Arrays.asList(1, null)));
     }
 

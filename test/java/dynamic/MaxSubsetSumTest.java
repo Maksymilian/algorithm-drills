@@ -55,9 +55,9 @@ class MaxSubsetSumTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> maxSubsetSum((int[]) null));
-        assertThrows(IllegalArgumentException.class, () -> maxSubsetSumAsLong((int[]) null));
-        assertThrows(IllegalArgumentException.class, () -> maxSubsetSumAsLong((IntStream) null));
+        assertThrows(NullPointerException.class, () -> maxSubsetSum((int[]) null));
+        assertThrows(NullPointerException.class, () -> maxSubsetSumAsLong((int[]) null));
+        assertThrows(NullPointerException.class, () -> maxSubsetSumAsLong((IntStream) null));
     }
 
     @Test

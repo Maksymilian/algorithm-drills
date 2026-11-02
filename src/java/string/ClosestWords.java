@@ -2,6 +2,7 @@ package string;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /// Najmniejsza odległość między dwoma słowami w długim tekście.
@@ -28,15 +29,14 @@ public class ClosestWords {
     private static final Pattern SEPARATORS = Pattern.compile("[^\\p{L}\\p{N}]+");
 
     public static int closest(String text, String a, String b) {
-        if (text == null) {
-            throw new IllegalArgumentException("brak tekstu");
-        }
+        Objects.requireNonNull(text, "brak tekstu");
         return closest(words(text), requireWord(a), requireWord(b));
     }
 
     // słowo z separatorem („ala ma”, „kot!”) nigdy nie trafi, bo podział tekstu je rozcina
     private static String requireWord(String word) {
-        if (word == null || word.isEmpty() || SEPARATORS.matcher(word).find()) {
+        Objects.requireNonNull(word, "brak szukanego słowa");
+        if (word.isEmpty() || SEPARATORS.matcher(word).find()) {
             throw new IllegalArgumentException("szukane słowo musi być niepuste, z samych liter i cyfr: " + word);
         }
         return normalize(word);

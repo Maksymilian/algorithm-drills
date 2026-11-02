@@ -31,9 +31,9 @@ class LongestWordsFromLettersTest {
 
     @Test
     void rejectsInvalidParameters() {
-        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords(null, List.of("a")));
-        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("abc", null));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NullPointerException.class, () -> LongestWordsFromLetters.longestWords(null, List.of("a")));
+        assertThrows(NullPointerException.class, () -> LongestWordsFromLetters.longestWords("abc", null));
+        assertThrows(NullPointerException.class,
                 () -> LongestWordsFromLetters.longestWords("abc", Arrays.asList("ab", null)));
         assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("ab1", List.of("ab")));
         assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("żab", List.of("ab")));

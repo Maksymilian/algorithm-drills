@@ -1,6 +1,7 @@
 package spatial;
 
 import java.util.List;
+import java.util.Objects;
 
 /// Miliardy punktów o współrzędnych całkowitych na płaszczyźnie, zbudowane raz i odpytywane wiele
 /// razy: **ile z nich leży w tym kole?**
@@ -102,7 +103,8 @@ public class PointCloud {
     }
 
     public PointCloud(int[] xs, int[] ys, int targetPointsPerCell) {
-        if (xs == null || ys == null) throw new IllegalArgumentException("xs and ys must not be null");
+        Objects.requireNonNull(xs, "xs nie może być null");
+        Objects.requireNonNull(ys, "ys nie może być null");
         if (xs.length != ys.length) {
             throw new IllegalArgumentException(
                     "xs and ys must be the same length, but were " + xs.length + " and " + ys.length);
@@ -142,14 +144,15 @@ public class PointCloud {
     }
 
     public static PointCloud of(List<int[]> points) {
-        if (points == null) throw new IllegalArgumentException("points must not be null");
+        Objects.requireNonNull(points, "points nie może być null");
 
         int n = points.size();
         int[] xs = new int[n];
         int[] ys = new int[n];
         for (int i = 0; i < n; i++) {
             int[] point = points.get(i);
-            if (point == null || point.length != 2) {
+            Objects.requireNonNull(point, "points[" + i + "] nie może być null");
+            if (point.length != 2) {
                 throw new IllegalArgumentException("points[" + i + "] must be an {x, y} pair");
             }
             xs[i] = point[0];

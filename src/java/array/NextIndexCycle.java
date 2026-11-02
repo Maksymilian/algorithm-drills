@@ -1,5 +1,6 @@
 package array;
 
+import java.util.Objects;
 /// Każdy element tablicy zawiera indeks następnego elementu. Idziemy od indeksu startowego: gdzie
 /// przejście zaczyna się powtarzać i jak długie jest to powtórzenie? Dla `tab = {3, 2, 1, 2, 4}` i
 /// `start = 0` przejście wygląda tak:
@@ -163,7 +164,7 @@ public class NextIndexCycle {
     }
 
     private static void requireWalkable(int[] tab, int start) {
-        if (tab == null) throw new IllegalArgumentException("tab must not be null");
+        Objects.requireNonNull(tab, "tab nie może być null");
         if (tab.length == 0) throw new IllegalArgumentException("tab must not be empty: there is nowhere to walk");
         if (start < 0 || start >= tab.length) {
             throw new IllegalArgumentException(

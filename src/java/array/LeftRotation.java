@@ -1,5 +1,6 @@
 package array;
 
+import java.util.Objects;
 /// HackerRank „Arrays: Left Rotation”: przesuń każdy element `a` o `d` pozycji w lewo, a pierwsze
 /// `d` elementów przenieś na koniec.
 ///
@@ -44,7 +45,7 @@ package array;
 public class LeftRotation {
 
     public static int[] rotLeft(int[] a, int d) {
-        if (a == null) throw new IllegalArgumentException("a must not be null");
+        Objects.requireNonNull(a, "a nie może być null");
 
         int n = a.length;
         if (n == 0) return new int[0];
@@ -57,7 +58,7 @@ public class LeftRotation {
     }
 
     public static void rotateLeftInPlace(int[] a, int d) {
-        if (a == null) throw new IllegalArgumentException("a must not be null");
+        Objects.requireNonNull(a, "a nie może być null");
 
         int n = a.length;
         if (n == 0) return;
@@ -70,7 +71,7 @@ public class LeftRotation {
     }
 
     public static void rotateLeftInPlaceByCycles(int[] a, int d) {
-        if (a == null) throw new IllegalArgumentException("a must not be null");
+        Objects.requireNonNull(a, "a nie może być null");
 
         int n = a.length;
         if (n == 0) return;

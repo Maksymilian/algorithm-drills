@@ -3,6 +3,7 @@ package string;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /// Najdłuższe słowa ze słownika, które da się ułożyć z liter danego napisu.
@@ -46,19 +47,12 @@ public class LongestWordsFromLetters {
     }
 
     private static void requireInputs(String letters, Collection<String> words) {
-        if (letters == null) {
-            throw new IllegalArgumentException("brak liter");
-        }
-        if (words == null) {
-            throw new IllegalArgumentException("brak słownika");
-        }
+        Objects.requireNonNull(letters, "brak liter");
+        Objects.requireNonNull(words, "brak słownika");
     }
 
     private static String requireWord(String word) {
-        if (word == null) {
-            throw new IllegalArgumentException("słownik zawiera null");
-        }
-        return word;
+        return Objects.requireNonNull(word, "słownik zawiera null");
     }
 
     private static boolean isWorthChecking(String word, List<String> best, int letterCount) {

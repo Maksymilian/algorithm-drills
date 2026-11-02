@@ -263,8 +263,8 @@ class PointCloudTest {
 
     @Test
     void rejectsArraysItCannotIndex() {
-        assertThrows(IllegalArgumentException.class, () -> new PointCloud(null, new int[1]));
-        assertThrows(IllegalArgumentException.class, () -> new PointCloud(new int[1], null));
+        assertThrows(NullPointerException.class, () -> new PointCloud(null, new int[1]));
+        assertThrows(NullPointerException.class, () -> new PointCloud(new int[1], null));
         assertThrows(IllegalArgumentException.class, () -> new PointCloud(new int[2], new int[3]));
         assertThrows(IllegalArgumentException.class, () -> new PointCloud(new int[1], new int[1], 0));
         assertThrows(IllegalArgumentException.class, () -> new PointCloud(new int[1], new int[1], -8));
@@ -288,7 +288,7 @@ class PointCloudTest {
         assertEquals(3, cloud.size());
         assertEveryMethodCounts(2, cloud, 0, 0, 2, "from a list of pairs");
 
-        assertThrows(IllegalArgumentException.class, () -> PointCloud.of(null));
+        assertThrows(NullPointerException.class, () -> PointCloud.of(null));
         assertThrows(IllegalArgumentException.class, () -> PointCloud.of(List.of(new int[]{1})));
         assertThrows(IllegalArgumentException.class, () -> PointCloud.of(List.of(new int[]{1, 2, 3})));
     }

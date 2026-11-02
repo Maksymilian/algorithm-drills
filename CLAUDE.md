@@ -69,9 +69,20 @@
 
 ## Każde rozwiązanie
 
-- **Zawsze walidujemy parametry publicznych metod.** `null`, puste kolekcje, wartości spoza
-  dozwolonego zakresu i niepoprawne dane rzucają `IllegalArgumentException` z komunikatem po polsku,
-  a nie `NullPointerException` z głębi kodu. Nie zwracamy „magicznej” wartości (np. 0 albo −1) dla
+- **Zawsze walidujemy parametry publicznych metod**, na samym początku metody, z komunikatem po
+  polsku. Wyjątek zależy od rodzaju błędu, tak jak w JDK:
+
+  | Błąd | Wyjątek | Jak |
+  |---|---|---|
+  | `null` jako parametr albo element kolekcji | `NullPointerException` | `Objects.requireNonNull(x, "brak napisu")` |
+  | zła wartość: spoza zakresu, pusta kolekcja, zły format | `IllegalArgumentException` | `if` z `throw` |
+  | indeks spoza `0..size-1` | `IndexOutOfBoundsException` | `Objects.checkIndex(i, size)` |
+  | poprawne parametry, ale obiekt w złym stanie | `IllegalStateException` | `if` z `throw` |
+  | przepełnienie | `ArithmeticException` | `Math.addExact`, `Math.multiplyExact`, `Math.toIntExact` |
+
+  `NullPointerException` rzucamy od razu przy wejściu do metody, a nie z głębi kodu. Wyjątek: gdy
+  zadanie nadaje `null` znaczenie (np. `null` w siatce liczy się jako 0), opisujemy to w tabeli
+  założeń. Nie zwracamy „magicznej” wartości (np. 0 albo −1) dla
   błędnego wejścia, jeśli może ona być też poprawnym wynikiem. Co jest błędem, a co poprawnym
   przypadkiem brzegowym (np. pusty napis), zapisujemy w tabeli założeń w notatce i w Javadocu klasy.
 

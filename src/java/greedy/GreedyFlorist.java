@@ -2,6 +2,7 @@ package greedy;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /// HackerRank „Greedy Florist”: `k` przyjaciół kupuje razem `n` kwiatów. Cena kwiatu to jego cena
 /// katalogowa razy jeden więcej niż liczba kwiatów, które _ten sam kupujący_ już kupił: pierwszy
@@ -76,7 +77,7 @@ public class GreedyFlorist {
     }
 
     public static int getMinimumCost(int k, List<Integer> c) {
-        if (c == null) throw new IllegalArgumentException("c must not be null");
+        Objects.requireNonNull(c, "c nie może być null");
 
         int[] prices = new int[c.size()];
         int next = 0;
@@ -157,7 +158,7 @@ public class GreedyFlorist {
     }
 
     private static void requireBuyable(int k, int[] c) {
-        if (c == null) throw new IllegalArgumentException("c must not be null");
+        Objects.requireNonNull(c, "c nie może być null");
         if (k < 1) throw new IllegalArgumentException("k must be at least 1, but was " + k);
 
         for (int price : c) {

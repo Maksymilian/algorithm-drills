@@ -12,9 +12,11 @@ cache jest pełny, wyrzuca element najdawniej używany (least recently used).
 
 | | |
 |---|---|
-| Pojemność | stała, dodatnia, podana w konstruktorze |
+| Pojemność | stała, dodatnia, podana w konstruktorze; 0 i ujemna to `IllegalArgumentException`, także w `withLinkedHashMap` |
 | Użycie | `get` i `put` odświeżają element; `put` istniejącego klucza nadpisuje wartość |
 | Brak klucza | `get` zwraca `null` |
+| `null` | klucz w `get` i `put` oraz wartość w `put` to `NullPointerException` (`Objects.requireNonNull`): `null` jako wartość byłby nie do odróżnienia od braku klucza (tak samo `ConcurrentHashMap` i `Map.of`) |
+| Pojemność 1 | każdy nowy klucz wyrzuca poprzedni |
 | Wątki | jeden (wersje wielowątkowe w dopytaniach) |
 | Koszt | `get` i `put` w O(1) |
 

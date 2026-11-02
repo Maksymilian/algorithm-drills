@@ -22,6 +22,6 @@ class FirstUniqueLetterTest {
 
     @Test
     void rejectsNull() {
-        assertThrows(IllegalArgumentException.class, () -> FirstUniqueLetter.firstUnique(null));
+        assertThrows(NullPointerException.class, () -> FirstUniqueLetter.firstUnique(null));
     }
 }

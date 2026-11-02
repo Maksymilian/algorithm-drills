@@ -97,11 +97,11 @@ class MinimumSwapsTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> minimumSwaps(null));
-        assertThrows(IllegalArgumentException.class, () -> minimumSwapsInPlace(null));
-        assertThrows(IllegalArgumentException.class, () -> minimumSwapsMarkingSigns(null));
-        assertThrows(IllegalArgumentException.class, () -> minimumSwapsByUnionFind(null));
-        assertThrows(IllegalArgumentException.class, () -> minimumSwapsOfAnyDistinctValues(null));
+        assertThrows(NullPointerException.class, () -> minimumSwaps(null));
+        assertThrows(NullPointerException.class, () -> minimumSwapsInPlace(null));
+        assertThrows(NullPointerException.class, () -> minimumSwapsMarkingSigns(null));
+        assertThrows(NullPointerException.class, () -> minimumSwapsByUnionFind(null));
+        assertThrows(NullPointerException.class, () -> minimumSwapsOfAnyDistinctValues(null));
     }
 
     @Test

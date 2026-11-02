@@ -1,6 +1,7 @@
 package array;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /// HackerRank „Minimum Swaps 2”: tablica zawiera `1, 2, ... n` w jakiejś kolejności; policz
 /// najmniejszą liczbę zamian dowolnych par, która ją sortuje.
@@ -79,7 +80,7 @@ import java.util.Arrays;
 public class MinimumSwaps {
 
     public static int minimumSwaps(int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         int n = arr.length;
         boolean[] visited = new boolean[n];
@@ -103,7 +104,7 @@ public class MinimumSwaps {
     }
 
     public static int minimumSwapsInPlace(int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         int n = arr.length;
         int swaps = 0;
@@ -123,7 +124,7 @@ public class MinimumSwaps {
     }
 
     public static int minimumSwapsMarkingSigns(int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         int n = arr.length;
         for (int value : arr) {
@@ -156,7 +157,7 @@ public class MinimumSwaps {
     }
 
     public static int minimumSwapsByUnionFind(int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
         int n = arr.length;
 
         // Union-find łączy po cichu: powtórzona wartość połączyłaby krawędź dwa razy i po prostu by
@@ -187,7 +188,7 @@ public class MinimumSwaps {
     }
 
     public static int minimumSwapsOfAnyDistinctValues(int[] a) {
-        if (a == null) throw new IllegalArgumentException("a must not be null");
+        Objects.requireNonNull(a, "a nie może być null");
         int n = a.length;
 
         int[] sorted = a.clone();

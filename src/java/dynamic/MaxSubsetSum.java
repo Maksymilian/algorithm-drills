@@ -1,5 +1,6 @@
 package dynamic;
 
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 /// HackerRank „Max Array Sum”: wybierz podzbiór elementów, z których żadne dwa nie sąsiadują, o
@@ -38,7 +39,7 @@ public class MaxSubsetSum {
     }
 
     public static long maxSubsetSumAsLong(int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         Best best = new Best();
         for (int value : arr) {
@@ -48,7 +49,7 @@ public class MaxSubsetSum {
     }
 
     public static long maxSubsetSumAsLong(IntStream values) {
-        if (values == null) throw new IllegalArgumentException("values must not be null");
+        Objects.requireNonNull(values, "values nie może być null");
 
         Best best = new Best();
         values.sequential().forEachOrdered(best::advance);

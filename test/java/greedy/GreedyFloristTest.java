@@ -144,12 +144,12 @@ class GreedyFloristTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> getMinimumCost(1, (int[]) null));
-        assertThrows(IllegalArgumentException.class, () -> getMinimumCost(1, (List<Integer>) null));
-        assertThrows(IllegalArgumentException.class, () -> getMinimumCostAsLong(1, null));
-        assertThrows(IllegalArgumentException.class, () -> getMinimumCostInPlace(1, null));
-        assertThrows(IllegalArgumentException.class, () -> getMinimumCostByCounting(1, null));
-        assertThrows(IllegalArgumentException.class, () -> purchasePlan(1, null));
+        assertThrows(NullPointerException.class, () -> getMinimumCost(1, (int[]) null));
+        assertThrows(NullPointerException.class, () -> getMinimumCost(1, (List<Integer>) null));
+        assertThrows(NullPointerException.class, () -> getMinimumCostAsLong(1, null));
+        assertThrows(NullPointerException.class, () -> getMinimumCostInPlace(1, null));
+        assertThrows(NullPointerException.class, () -> getMinimumCostByCounting(1, null));
+        assertThrows(NullPointerException.class, () -> purchasePlan(1, null));
     }
 
     @Test

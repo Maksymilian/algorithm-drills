@@ -61,5 +61,67 @@ class LruCacheTest {
     @Test
     void capacityMustBePositive() {
         assertThrows(IllegalArgumentException.class, () -> new LruCache<String, String>(0));
+        assertThrows(IllegalArgumentException.class, () -> new LruCache<String, String>(-1));
+        assertThrows(IllegalArgumentException.class, () -> new LruCache<String, String>(Integer.MIN_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> LruCache.withLinkedHashMap(0));
+    }
+
+    @Test
+    void rejectsNullKeyInPut() {
+        LruCache<String, Integer> cache = new LruCache<>(2);
+        assertThrows(NullPointerException.class, () -> cache.put(null, 1));
+        assertEquals(0, cache.size());
+    }
+
+    @Test
+    void rejectsNullValueInPut() {
+        LruCache<String, Integer> cache = new LruCache<>(2);
+        assertThrows(NullPointerException.class, () -> cache.put("a", null));
+        assertEquals(0, cache.size());
+    }
+
+    @Test
+    void rejectedNullDoesNotChangeExistingEntry() {
+        LruCache<String, Integer> cache = new LruCache<>(2);
+        cache.put("a", 1);
+        cache.put("b", 2);
+        assertThrows(NullPointerException.class, () -> cache.put("a", null));
+        assertEquals(List.of("b", "a"), cache.keys(), "odrzucony put nie odświeża klucza");
+        assertEquals(1, cache.get("a"));
+    }
+
+    @Test
+    void rejectsNullKeyInGet() {
+        LruCache<String, Integer> cache = new LruCache<>(2);
+        assertThrows(NullPointerException.class, () -> cache.get(null));
+    }
+
+    @Test
+    void missingKeyReturnsNullWithoutChangingOrder() {
+        LruCache<String, Integer> cache = new LruCache<>(2);
+        cache.put("a", 1);
+        cache.put("b", 2);
+        assertNull(cache.get("x"));
+        assertEquals(List.of("b", "a"), cache.keys());
+    }
+
+    @Test
+    void capacityOneKeepsOnlyTheLastKey() {
+        LruCache<String, Integer> cache = new LruCache<>(1);
+        cache.put("a", 1);
+        cache.put("b", 2);
+        assertNull(cache.get("a"));
+        assertEquals(2, cache.get("b"));
+        assertEquals(List.of("b"), cache.keys());
+    }
+
+    @Test
+    void sizeNeverExceedsCapacity() {
+        LruCache<Integer, Integer> cache = new LruCache<>(3);
+        for (int i = 0; i < 100; i++) {
+            cache.put(i, i);
+            assertEquals(Math.min(i + 1, 3), cache.size());
+        }
+        assertEquals(List.of(99, 98, 97), cache.keys());
     }
 }

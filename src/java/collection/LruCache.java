@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /// Pamięć podręczna LRU (least recently used): ograniczona pojemność, a po jej przekroczeniu
 /// wyrzucamy element najdawniej używany.
@@ -21,6 +22,10 @@ import java.util.Map;
 ///
 /// Dwa węzły-strażnicy (`head`, `tail`) usuwają przypadki brzegowe: lista nigdy nie jest
 /// naprawdę pusta, więc nie ma sprawdzania `null`.
+///
+/// **Walidacja.** Pojemność musi być dodatnia (`IllegalArgumentException`), a klucz i wartość nie
+/// mogą być `null` (`NullPointerException`). `get` zwraca `null`, gdy klucza nie ma, więc wartość
+/// `null` byłaby nie do odróżnienia od braku wpisu. Tak samo robią `ConcurrentHashMap` i `Map.of`.
 ///
 /// **Wersja w 5 linijkach.** [LinkedHashMap] z `accessOrder = true` robi dokładnie
 /// to samo, a `removeEldestEntry` wyrzuca najstarszy element ([#withLinkedHashMap]).
@@ -48,15 +53,14 @@ public final class LruCache<K, V> {
     private final Node tail = new Node(null, null);   // tail.prev to najstarszy element
 
     public LruCache(int capacity) {
-        if (capacity <= 0) {
-            throw new IllegalArgumentException("pojemność musi być dodatnia");
-        }
+        requirePositive(capacity);
         this.capacity = capacity;
         head.next = tail;
         tail.prev = head;
     }
 
     public V get(K key) {
+        Objects.requireNonNull(key, "klucz nie może być null");
         Node node = nodes.get(key);
         if (node == null) {
             return null;
@@ -66,6 +70,8 @@ public final class LruCache<K, V> {
     }
 
     public void put(K key, V value) {
+        Objects.requireNonNull(key, "klucz nie może być null");
+        Objects.requireNonNull(value, "wartość nie może być null");
         Node node = nodes.get(key);
         if (node != null) {
             node.value = value;
@@ -119,7 +125,14 @@ public final class LruCache<K, V> {
         head.next = node;
     }
 
+    private static void requirePositive(int capacity) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("pojemność musi być dodatnia, a jest " + capacity);
+        }
+    }
+
     public static <K, V> Map<K, V> withLinkedHashMap(int capacity) {
+        requirePositive(capacity);
         return new LinkedHashMap<>(16, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {

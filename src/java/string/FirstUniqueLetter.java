@@ -1,5 +1,7 @@
 package string;
 
+import java.util.Objects;
+
 /// Pierwsza litera, która występuje w napisie dokładnie raz, bez alokowania pamięci dynamicznej.
 ///
 /// **Treść.** W `"swiss"` pierwszą unikalną literą jest `w`, na pozycji 1.
@@ -45,10 +47,7 @@ public class FirstUniqueLetter {
     }
 
     private static String requireText(String s) {
-        if (s == null) {
-            throw new IllegalArgumentException("brak napisu");
-        }
-        return s;
+        return Objects.requireNonNull(s, "brak napisu");
     }
 
     private static int bit(char c) {

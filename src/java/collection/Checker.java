@@ -2,6 +2,7 @@ package collection;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 
 /// HackerRank „Java Comparator”: posortuj graczy malejąco po wyniku, a przy równym wyniku rosnąco po
 /// imieniu. Nazwa `Checker` jest narzucona przez zadanie. Notatka: `docs/collection/checker.md`.
@@ -26,9 +27,7 @@ public class Checker implements Comparator<Checker.Player> {
 
     record Player(String name, int score) {
         Player {
-            if (name == null) {
-                throw new IllegalArgumentException("gracz musi mieć imię");
-            }
+            Objects.requireNonNull(name, "gracz musi mieć imię");
         }
 
         @Override

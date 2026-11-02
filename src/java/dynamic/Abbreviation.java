@@ -1,5 +1,6 @@
 package dynamic;
 
+import java.util.Objects;
 /// HackerRank „Abbreviation”: czy `a` da się zamienić w `b`, zamieniając niektóre małe litery na
 /// wielkie i usuwając wszystkie pozostałe małe litery?
 ///
@@ -39,7 +40,8 @@ public class Abbreviation {
     }
 
     public static boolean canAbbreviate(String a, String b) {
-        if (a == null || b == null) throw new IllegalArgumentException("a and b must not be null");
+        Objects.requireNonNull(a, "a nie może być null");
+        Objects.requireNonNull(b, "b nie może być null");
 
         int n = a.length();
         int m = b.length();

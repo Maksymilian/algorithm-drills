@@ -118,12 +118,12 @@ class MaxMinTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> maxMin(1, (int[]) null));
-        assertThrows(IllegalArgumentException.class, () -> maxMin(1, (List<Integer>) null));
-        assertThrows(IllegalArgumentException.class, () -> maxMinAsLong(1, null));
-        assertThrows(IllegalArgumentException.class, () -> maxMinInPlace(1, null));
-        assertThrows(IllegalArgumentException.class, () -> maxMinByRadixSort(1, null));
-        assertThrows(IllegalArgumentException.class, () -> fairestSelection(1, null));
+        assertThrows(NullPointerException.class, () -> maxMin(1, (int[]) null));
+        assertThrows(NullPointerException.class, () -> maxMin(1, (List<Integer>) null));
+        assertThrows(NullPointerException.class, () -> maxMinAsLong(1, null));
+        assertThrows(NullPointerException.class, () -> maxMinInPlace(1, null));
+        assertThrows(NullPointerException.class, () -> maxMinByRadixSort(1, null));
+        assertThrows(NullPointerException.class, () -> fairestSelection(1, null));
     }
 
     @Test

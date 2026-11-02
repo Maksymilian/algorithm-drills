@@ -1,6 +1,7 @@
 package dynamic;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 /// HackerRank „Candies”: rozdaj cukierki dzieciom stojącym w rzędzie. Każde dziecko dostaje co
@@ -53,7 +54,7 @@ import java.util.stream.IntStream;
 public class Candies {
 
     public static long candies(int n, List<Integer> arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         Run run = new Run();
         for (Integer rating : arr) {
@@ -63,7 +64,7 @@ public class Candies {
     }
 
     public static long candies(int[] ratings) {
-        if (ratings == null) throw new IllegalArgumentException("ratings must not be null");
+        Objects.requireNonNull(ratings, "ratings nie może być null");
 
         Run run = new Run();
         for (int rating : ratings) {
@@ -73,7 +74,7 @@ public class Candies {
     }
 
     public static long candies(IntStream ratings) {
-        if (ratings == null) throw new IllegalArgumentException("ratings must not be null");
+        Objects.requireNonNull(ratings, "ratings nie może być null");
 
         Run run = new Run();
         ratings.sequential().forEachOrdered(run::advance);
@@ -81,7 +82,7 @@ public class Candies {
     }
 
     public static long candiesWithTable(int[] ratings) {
-        if (ratings == null) throw new IllegalArgumentException("ratings must not be null");
+        Objects.requireNonNull(ratings, "ratings nie może być null");
 
         int n = ratings.length;
         int[] left = new int[n];    // L[i]: odpowiedź dla ratings[0..i], bez prawego sąsiada

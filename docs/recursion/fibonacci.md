@@ -53,6 +53,62 @@ potrzebowała czterech sekund na `F(45)`.
 ramek, tu 45, kilka kilobajtów. To zaskakuje ludzi: naiwny Fibonacci w żaden sposób nie jest
 problemem pamięci. To czysta katastrofa procesorowa.
 
+## Dwie różne granice: głębokość i liczba wywołań
+
+Rekurencja ma dwie niezależne granice i łatwo je pomylić:
+
+| Granica | Co mierzy | Co ją przekracza | Objaw |
+|---|---|---|---|
+| **głębokość** | ile wywołań jest otwartych **naraz**, jedno na drugim | ~10⁴–2·10⁴ ramek przy domyślnym stosie 1 MB | `StackOverflowError` |
+| **liczba wywołań** | ile wywołań jest **łącznie** przez cały przebieg | ~10⁸–10⁹ na sekundę | program „wisi” |
+
+Naiwne `naive(90)` jest daleko od pierwszej i beznadziejnie za drugą:
+
+| `naive(90)` | Wartość | Granica | Problem? |
+|---|---|---|---|
+| głębokość | **90** ramek | ~20 000 | nie |
+| liczba wywołań | `2F(91) − 1` ≈ **9.3·10¹⁸** | 9.12·10⁸ / s | **~324 lata** |
+
+Rekurencja schodzi jedną gałęzią (`F(90) → F(89) → … → F(1)`), wraca i schodzi następną, więc na
+stosie leży naraz najwyżej 90 ramek. Robi to jednak wykładniczo wiele razy. Program się nie wywraca,
+tylko nigdy nie kończy. Dlatego oceniając rekurencję, zadajemy **dwa** pytania: jak głęboko zejdzie
+(stos) i ile będzie wywołań łącznie (czas).
+
+## Problemem nie jest rekurencja, tylko powtórzenia
+
+Wykładniczy koszt daje połączenie dwóch rzeczy: **dwa wywołania na poziom** (drzewo się rozgałęzia)
+i **podproblemy, które się pokrywają i maleją tylko o 1 albo 2** (drzewo ma głębokość ~`n`).
+Same dwa wywołania nie szkodzą, jeśli dzielą problem na rozłączne połowy:
+
+| Rekurencja | Wywołań na poziom | Podproblem maleje | Pokrywanie | Koszt |
+|---|---|---|---|---|
+| naiwny Fibonacci | 2 | o 1 i o 2 | **prawie całkowite** | O(1.618ⁿ) |
+| sortowanie przez scalanie | 2 | do połowy | brak | O(n log n) |
+| Fibonacci, jedno wywołanie niosące parę | 1 | o 1 | brak | O(n) |
+| Fibonacci, szybkie podwajanie | 1 | do połowy | brak | O(log n) |
+
+Wystarczy jedno wywołanie, które niesie w dół dwie ostatnie wartości, zamiast liczyć je od nowa:
+
+```java
+private static long fib(int n, long previous, long current) {
+    if (n == 0) {
+        return previous;
+    }
+    return fib(n - 1, current, previous + current);
+}
+// fib(n, 0, 1)
+```
+
+Drzewo staje się ścieżką: `n` wywołań i `n` dodawań, czyli pętla z [wersji iteracyjnej](#wersja-iteracyjna-i-co-zapamiętywanie-wciąż-kosztuje)
+zapisana rekurencyjnie. To jest „rekurencja niosąca” z tabeli ramek niżej: szybka, ale nadal `n`
+ramek stosu, bo Java nie usuwa wywołań ogonowych.
+
+Trzy sposoby usunięcia powtórzeń, od najprostszego:
+
+1. **zapamiętać** wyniki: dwa wywołania zostają, każde `F(k)` liczone raz, O(n);
+2. **nieść stan w dół**: jedno wywołanie, O(n), bez tabeli;
+3. **dzielić na pół**: jedno wywołanie, O(log n) (szybkie podwajanie, niżej).
+
 ## Zapamiętywanie: to samo drzewo z każdym powtórzeniem skreślonym
 
 ```java
@@ -187,6 +243,110 @@ odpowiedź, a pętla nie, bo zamienia milion dużych dodawań w dwadzieścia du�
 
 Żadnego z nich nie ma w tej klasie. Ćwiczenie prosiło o rekurencję i jej wersję z zapamiętywaniem;
 tu powinien zajrzeć ktoś, kto potrzebuje `F(10⁶)`.
+
+Wynika z tego też, że **iteracja nie zawsze jest „o wiele lepsza”**:
+
+| Iteracja zamiast… | Czy o wiele lepsza? |
+|---|---|
+| naiwnej rekurencji | tak, ale dzięki usunięciu powtórzeń, nie dzięki samej pętli |
+| zapamiętywania, `long` | ~21× szybsza (9.7 ns wobec 207 ns), w praktyce bez znaczenia |
+| zapamiętywania, `BigInteger`, duże `n` | tak: brak granicy stosu i O(1) liczb w pamięci zamiast całej tabeli |
+| szybkiego podwajania, bardzo duże `n` | nie, przegrywa |
+
+## Jak policzyć wywołania
+
+**Zmierzyć licznikiem.** Pole zwiększane na wejściu do metody (a dla głębokości: `depth++` na
+wejściu, `depth--` przed powrotem, `maxDepth = Math.max(maxDepth, depth)`):
+
+```java
+private static long calls;
+
+static long naive(int n) {
+    calls++;
+    if (n <= 1) {
+        return n;
+    }
+    return naive(n - 1) + naive(n - 2);
+}
+```
+
+Daje to 177 wywołań dla `n = 10`, 21 891 dla 20 i 2 692 537 dla 30, czyli dokładnie `2F(n+1) − 1`.
+Dla dużego `n` licznik nie pomoże, bo trzeba by doczekać wyniku, więc warto umieć to policzyć.
+
+**Policzyć z rekurencji.** Jedno wywołanie to ono samo plus wywołania, które robi:
+`C(n) = 1 + C(n-1) + C(n-2)` (rozwiązane na początku notatki).
+
+**Oszacować: rozgałęzienie do potęgi głębokości.**
+
+| Kształt rekurencji | Wywołania |
+|---|---|
+| 1 wywołanie, `n` maleje o 1 | n |
+| 1 wywołanie, `n` maleje o połowę | log n |
+| 2 wywołania, `n` maleje o połowę (scalanie) | ~2n wywołań, O(n log n) pracy |
+| 2 wywołania, `n` maleje o 1 | **2ⁿ** |
+| 2 wywołania, `n` maleje o 1 i o 2 (Fibonacci) | **~1.618ⁿ** |
+| `k` wywołań, głębokość `d` | do **kᵈ** |
+| z zapamiętywaniem | liczba **różnych** argumentów × wywołania na stan |
+
+**Zamienić na czas:** ~10⁸–10⁹ prostych wywołań na sekundę (tu zmierzone 9.12·10⁸):
+
+| Wywołania | Czas |
+|---|---|
+| 10⁶ | ~1 ms |
+| 10⁹ | ~1 s |
+| 10¹² | ~20 minut |
+| 10¹⁸ | ~30 lat |
+
+Na rozmowie: rekurencja na liczbę wywołań, oszacowanie `rozgałęzienie^głębokość`, porównanie z
+budżetem 10⁸ na sekundę. Trzydzieści sekund i wiadomo, czy rozwiązanie się skończy.
+
+## Rekurencja czy iteracja
+
+Dla **tego samego algorytmu** iteracja w Javie jest zwykle trochę szybsza, o stałą. Złożoność
+wyznacza algorytm, nie forma zapisu.
+
+**Co JIT robi z rekurencją.** Kompiluje ją do kodu maszynowego jak każdą gorącą metodę, ale wstawia
+(inline) rekurencyjne wywołania tylko na **jeden poziom** (`MaxRecursiveInlineLevel = 1`, sprawdzone
+`java -XX:+PrintFlagsFinal -version`, JDK 25). Pętla dostaje pełny zestaw: rozwijanie, zmienne w
+rejestrach, wektoryzację. Wywołań ogonowych JIT **nie usuwa**, więc głębokość zawsze kosztuje ramkę.
+Samo wywołanie to jednak ułamek nanosekundy do kilku nanosekund (912 milionów na sekundę wyżej):
+widać je dopiero przy ciele metody tak małym jak tu i miliardach wywołań.
+
+**Skąd granica 10⁴.** Domyślny stos wątku to 1 MB (`ThreadStackSize = 1024`). Ile ramek się mieści,
+zależy od rozmiaru ramki (parametry, zmienne lokalne): tu 21 571 dla `long` i 12 268 dla `BigInteger`,
+a metoda z większą liczbą zmiennych padnie wcześniej. Dlatego `n ≥ 10⁴` to bezpieczny próg, od którego
+zwykła rekurencja prawdopodobnie się wywróci, a testy HackerRank mają często `n = 10⁵`.
+
+**Kiedy rekurencja:**
+
+| Sytuacja | Przykłady | Dlaczego |
+|---|---|---|
+| dane są rekurencyjne | drzewa, JSON, system plików, wyrażenia | kod odwzorowuje strukturę |
+| dziel i zwyciężaj | sortowanie przez scalanie, quicksort, szybkie podwajanie | głębokość ~log n |
+| nawroty (backtracking) | permutacje, podzbiory, N hetmanów, sudoku, DFS | stos wywołań za darmo pamięta stan do cofnięcia |
+| DP od góry z zapamiętywaniem | dużo stanów, potrzebna tylko część | liczy tylko to, co potrzebne |
+| gramatyki | parser zstępujący | jedna metoda na regułę |
+
+**Kiedy iteracja:**
+
+| Sytuacja | Przykłady | Dlaczego |
+|---|---|---|
+| głębokość może być ~n | DFS na grafie 10⁵ wierzchołków, lista, DP po n krokach | `StackOverflowError` |
+| proste akumulowanie | suma, Fibonacci, silnia, okno przesuwne | pętla jest tak samo czytelna |
+| DP od dołu | gdy i tak potrzebny jest każdy stan | bez stosu, tabelę często da się zwinąć do O(1) |
+| gorący kod wołany miliony razy | | narzut wywołań się sumuje |
+
+1. **Pisz tak, jak najczytelniej.** Dla drzew i nawrotów to zwykle rekurencja.
+2. **Sprawdź, jak głęboko zejdzie.** log n albo kilkaset poziomów: rekurencja jest w porządku. Jeśli
+   może to być `n` przy `n ≥ 10⁴`: pętla albo jawny stos na `ArrayDeque` (dla bezpieczeństwa stosu,
+   nie dla szybkości). Głębokość zależy od **kształtu danych w najgorszym przypadku**, nie od typowego:
+   BST zbudowane z posortowanych kluczy, DFS po grafie-ścieżce i quicksort ze złym pivotem schodzą na
+   `n`, a nie na log n. W ostateczności wątek z większym stosem:
+   `new Thread(null, task, "deep", 512L << 20)`.
+3. **Sprawdź, czy coś nie jest liczone dwa razy.** Jeśli tak, lekarstwem jest zapamiętywanie albo DP,
+   nie pętla. To właśnie lekcja tej notatki: `naive(90)` blokuje liczba wywołań, nie głębokość.
+4. **Szybkość mierz, nie zakładaj.** Prawdziwe powody, by przepisać rekurencję na pętlę, to stos i
+   powtórzenia; JIT jest daleko na trzecim miejscu.
 
 ## Testy
 

@@ -8,25 +8,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-/// k najczęstszych słów.
-///
-/// **Treść.** Z listy słów zwróć k najczęstszych, od najczęstszego. Przy równej liczbie
+/// Z listy słów zwróć k najczęstszych, od najczęstszego. Przy równej liczbie
 /// wystąpień wcześniej idzie słowo wcześniejsze alfabetycznie.
 ///
-/// **Pomysł: `HashMap` + kopiec o rozmiarze k.** Najpierw liczymy wystąpienia w mapie.
-/// Potem trzymamy kopiec minimalny ([PriorityQueue]) z k najlepszymi dotąd słowami. Na jego
-/// szczycie jest _najsłabsze_ z nich. Każde nowe słowo wkładamy, a gdy kopiec ma k + 1
+/// **Pomysł: `HashMap` + heap o rozmiarze k.**
+///
+/// Najpierw liczymy wystąpienia w mapie.
+/// Potem trzymamy heap minimalny ([PriorityQueue]) z k najlepszymi dotąd słowami. Na jego
+/// szczycie jest _najsłabsze_ z nich. Każde nowe słowo wkładamy, a gdy heap ma k + 1
 /// elementów, zdejmujemy najsłabsze. Na koniec zdejmujemy wszystko (od najsłabszego) i
 /// odwracamy kolejność.
 ///
-/// **Dlaczego kopiec minimalny, a nie maksymalny?** Maksymalny musiałby pomieścić wszystkie m
-/// różnych słów. Minimalny trzyma tylko k.
+/// **Dlaczego heap minimalny, a nie maksymalny?**
 ///
-/// **Złożoność.** O(n + m log k) czasu dla n słów i m różnych słów, O(m) pamięci na mapę.
+/// Maksymalny musiałby pomieścić wszystkie m różnych słów. Minimalny trzyma tylko k.
+///
+/// **Złożoność.**
+///
+/// O(n + m log k) czasu dla n słów i m różnych słów, O(m) pamięci na mapę.
 /// Sortowanie całej mapy kosztuje O(m log m). Sortowanie kubełkowe po liczbie wystąpień daje O(n).
 ///
-/// **Dopytania.** Nieskończony strumień i mało pamięci: algorytm Misra-Gries albo Count-Min
-/// Sketch z kopcem, z wynikiem przybliżonym. Wiele maszyn: liczymy lokalnie, potem łączymy liczniki
+/// **Dopytania.**
+///
+/// Nieskończony strumień i mało pamięci: algorytm Misra-Gries albo Count-Min
+/// Sketch z heapem, z wynikiem przybliżonym. Wiele maszyn: liczymy lokalnie, potem łączymy liczniki
 /// (map-reduce).
 public class TopKFrequentWords {
 
@@ -40,7 +45,7 @@ public class TopKFrequentWords {
         for (Map.Entry<String, Integer> entry : countWords(words).entrySet()) {
             heap.add(entry);
             if (heap.size() > k) {
-                heap.poll();   // wyrzucamy najsłabsze z k + 1
+                heap.poll();
             }
         }
         return strongestFirst(heap);
@@ -69,7 +74,7 @@ public class TopKFrequentWords {
     }
 
     void main() {
-        List<String> words = List.of("kot", "pies", "kot", "mysz", "pies", "kot", "ryba", "mysz");
-        IO.println(topK(words, 2));   // [kot, mysz] - mysz i pies po 2, mysz wcześniej w alfabecie
+        List<String> words = List.of("kot", "pies", "kot", "mysz", "mysz", "mysz", "kot", "ryba", "mysz");
+        IO.println(topK(words, 3));
     }
 }

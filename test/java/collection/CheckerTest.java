@@ -105,7 +105,7 @@ class CheckerTest {
 
     @Test
     void rejectsPlayerWithoutName() {
-        assertThrows(IllegalArgumentException.class, () -> new Player(null, 1));
+        assertThrows(NullPointerException.class, () -> new Player(null, 1));
     }
 
     private static List<Player> randomPlayers(Random random, int count) {

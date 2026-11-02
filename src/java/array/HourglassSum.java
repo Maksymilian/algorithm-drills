@@ -53,9 +53,7 @@ public class HourglassSum {
     }
 
     private static int[][] toGrid(List<List<Integer>> arr) {
-        if (arr == null) {
-            throw new IllegalArgumentException("brak tablicy");
-        }
+        Objects.requireNonNull(arr, "brak tablicy");
         return arr.stream()
                 .map(row -> row.stream().mapToInt(HourglassSum::zeroIfNull).toArray())
                 .toArray(int[][]::new);

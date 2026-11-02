@@ -127,6 +127,6 @@ class BalancedBracketsTest {
 
     @Test
     void rejectsNull() {
-        assertThrows(IllegalArgumentException.class, () -> isBalanced(null));
+        assertThrows(NullPointerException.class, () -> isBalanced(null));
     }
 }

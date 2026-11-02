@@ -19,7 +19,8 @@ W długim tekście, dla dwóch słów, znajdź najmniejszą odległość między
 | Słowa | wielkość liter i interpunkcja bez znaczenia (`"Ala,"` to `ala`) |
 | a == b | odległość między dwoma kolejnymi wystąpieniami |
 | Brak słowa | −1 |
-| `null`, puste słowo, słowo ze znakiem spoza liter i cyfr (`"ala ma"`, `"kot!"`) | `IllegalArgumentException`: takie słowo nigdy nie trafi, bo podział tekstu je rozcina, a −1 ukryłoby błąd wywołującego |
+| `null` jako tekst albo słowo | `NullPointerException` (`Objects.requireNonNull`) |
+| Puste słowo, słowo ze znakiem spoza liter i cyfr (`"ala ma"`, `"kot!"`) | `IllegalArgumentException`: takie słowo nigdy nie trafi, bo podział tekstu je rozcina, a −1 ukryłoby błąd wywołującego |
 | Zapytania | jedno |
 
 ## Rozwiązanie

@@ -5,7 +5,8 @@ zadań rekrutacyjnych mają tę samą budowę: treść, tabelę założeń, rozw
 dlaczego te kolekcje i dopytania.
 
 **Zacznij od [ściągi](docs/cheatsheet.md)**: jak przedstawić rozwiązanie w 30 minut, jak rozpoznać
-wzorzec po treści, wnioski ze wszystkich ćwiczeń, pułapki Javy i którą kolekcję wybrać.
+wzorzec po treści, wnioski ze wszystkich ćwiczeń, pułapki Javy i którą kolekcję wybrać. Koszt
+pojedynczych operacji na kolekcjach jest w [złożoności kolekcji](docs/collections-complexity.md).
 
 | Co | Gdzie |
 |---|---|

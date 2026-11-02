@@ -3,6 +3,7 @@ package string;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Objects;
 
 /// HackerRank „Balanced Brackets”: czy każdy nawias w napisie ma parę tego samego typu, a nawiasy
 /// wewnątrz każdej pary też są zrównoważone. Notatka: `docs/string/balanced-brackets.md`.
@@ -35,9 +36,7 @@ public class BalancedBrackets {
     }
 
     public static boolean balanced(String s) {
-        if (s == null) {
-            throw new IllegalArgumentException("brak napisu");
-        }
+        Objects.requireNonNull(s, "brak napisu");
         Deque<Character> open = new ArrayDeque<>();
         for (int i = 0; i < s.length(); i++) {
             if (!accept(open, s.charAt(i))) {

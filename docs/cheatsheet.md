@@ -58,6 +58,10 @@ do których prowadzą linki.
   ([śnieg](array/trapping-water.md))
 - **Pętla w pętli to nie zawsze O(n²).** Jeśli każdy element raz wchodzi do struktury i raz z niej
   wychodzi, łącznie jest O(n) (analiza zamortyzowana). ([kolejka monotoniczna](array/sliding-window-maximum.md))
+- **Rekurencja ma dwie granice: głębokość i liczbę wywołań.** Głębokość ≥ 10⁴ wywraca stos, a
+  liczba wywołań ≈ `rozgałęzienie^głębokość` decyduje o czasie. Naiwne `F(90)` ma głębokość 90, ale
+  9.3·10¹⁸ wywołań. Lekarstwem na powtórzenia jest zapamiętywanie albo DP, nie pętla.
+  ([Fibonacci](recursion/fibonacci.md))
 - **Wiele zapytań o te same dane: przygotuj je raz.** Indeks słów, sumy prefiksowe, posortowane
   pozycje. Koszt budowy dzieli się na wszystkie zapytania.
 - **Pierwsza wersja to tablice, docelowa to mniej pamięci.** Tablice maksimów łatwo udowodnić,
@@ -114,6 +118,9 @@ do których prowadzą linki.
 | dostępu po indeksie | `ArrayList` / tablica | O(1) | tablica typów prostych bez opakowywania |
 | małego zbioru z małym alfabetem | maska bitowa / `int[26]` | O(1) | bez obiektów |
 | dostępu z wielu wątków | `ConcurrentHashMap`, `ConcurrentSkipListMap` | jak wyżej | skip-lista to współbieżny odpowiednik `TreeMap` |
+
+Koszt każdej operacji (listy, mapy, kopiec, napisy, strumienie, pamięć na element) i jak wyznaczyć
+O() krok po kroku: [złożoność operacji na kolekcjach](collections-complexity.md).
 
 ## Ile danych zniesie dana złożoność
 

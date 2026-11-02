@@ -7,8 +7,7 @@ import java.util.TreeMap;
 /// Generator losowych znaków o zadanym rozkładzie prawdopodobieństwa.
 ///
 /// **Treść.** Konstruktor dostaje mapę: znak → prawdopodobieństwo z przedziału (0, 1\].
-/// Metoda [#next()] losuje znak zgodnie z tym rozkładem. Wolno używać tylko zwykłego
-/// generatora liczb losowych (`rand()` w C++, [Random] w Javie).
+/// Metoda [#next()] losuje znak zgodnie z tym rozkładem.
 ///
 /// **Pomysł: sumy prefiksowe i wyszukiwanie binarne.** Dla `{a: 0.5, b: 0.3, c: 0.2}`
 /// układamy przedziały na odcinku \[0, 1): a = \[0, 0.5), b = \[0.5, 0.8), c = \[0.8, 1). Losujemy
@@ -40,7 +39,7 @@ public final class WeightedRandomChar {
         if (distribution.isEmpty()) {
             throw new IllegalArgumentException("pusty alfabet");
         }
-        TreeMap<Character, Number> sorted = new TreeMap<>(distribution);   // stała kolejność znaków
+        TreeMap<Character, Number> sorted = new TreeMap<>(distribution);
         symbols = new char[sorted.size()];
         cumulative = new double[sorted.size()];
         fillPrefixSums(sorted);
@@ -50,7 +49,7 @@ public final class WeightedRandomChar {
     private void fillPrefixSums(TreeMap<Character, Number> sorted) {
         double sum = 0;
         int i = 0;
-        for (Map.Entry<Character, Number> e : sorted.entrySet()) {
+        for (var e : sorted.entrySet()) {
             sum += probability(e);
             symbols[i] = e.getKey();
             cumulative[i++] = sum;
@@ -97,6 +96,6 @@ public final class WeightedRandomChar {
         for (int i = 0; i < 100_000; i++) {
             counts.merge(generator.next(), 1, Integer::sum);
         }
-        IO.println(counts);   // około {a=50000, b=30000, c=20000}
+        IO.println(counts);
     }
 }

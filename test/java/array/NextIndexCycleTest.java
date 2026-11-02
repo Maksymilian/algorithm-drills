@@ -157,13 +157,13 @@ class NextIndexCycleTest {
         for (Method method : METHODS) {
             BiFunction<int[], Integer, Cycle> find = method.find();
 
-            assertThrows(IllegalArgumentException.class, () -> find.apply(null, 0), method.name() + " on null");
+            assertThrows(NullPointerException.class, () -> find.apply(null, 0), method.name() + " on null");
             assertThrows(IllegalArgumentException.class, () -> find.apply(new int[0], 0), method.name() + " on an empty array");
             assertThrows(IllegalArgumentException.class, () -> find.apply(new int[]{0}, -1), method.name() + " from -1");
             assertThrows(IllegalArgumentException.class, () -> find.apply(new int[]{0}, 1), method.name() + " from n");
             assertThrows(IllegalArgumentException.class, () -> find.apply(new int[]{0}, Integer.MIN_VALUE), method.name() + " from MIN_VALUE");
         }
-        assertThrows(IllegalArgumentException.class, () -> walkToFirstRepeat(null, 0));
+        assertThrows(NullPointerException.class, () -> walkToFirstRepeat(null, 0));
         assertThrows(IllegalArgumentException.class, () -> walkToFirstRepeat(new int[0], 0));
         assertThrows(IllegalArgumentException.class, () -> walkToFirstRepeat(new int[]{0}, 1));
     }

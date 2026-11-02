@@ -1,6 +1,7 @@
 package array;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /// Druga najmniejsza wartość w tablicy, w jednym przejściu.
 ///
@@ -22,7 +23,8 @@ import java.util.Arrays;
 public class SecondLowestInArrayMain {
 
     public static int secondLowest(int[] nums) {
-        if (nums == null || nums.length < 2) {
+        Objects.requireNonNull(nums, "nums nie może być null");
+        if (nums.length < 2) {
             throw new IllegalArgumentException("Need at least two elements");
         }
 
@@ -45,7 +47,8 @@ public class SecondLowestInArrayMain {
     }
 
     public static int mySecondLowest(int[] nums) {
-        if (nums == null || nums.length < 2) {
+        Objects.requireNonNull(nums, "nums nie może być null");
+        if (nums.length < 2) {
             throw new IllegalArgumentException("Need at least two elements");
         }
         int lowestIndex = 0;
@@ -63,7 +66,8 @@ public class SecondLowestInArrayMain {
     }
 
     public static int secondLowestWithDuplicates(int[] nums) {
-        if (nums == null || nums.length < 2) {
+        Objects.requireNonNull(nums, "nums nie może być null");
+        if (nums.length < 2) {
             throw new IllegalArgumentException("Need at least two elements");
         }
 

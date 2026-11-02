@@ -79,9 +79,9 @@ class LeftRotationTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> rotLeft(null, 1));
-        assertThrows(IllegalArgumentException.class, () -> rotateLeftInPlace(null, 1));
-        assertThrows(IllegalArgumentException.class, () -> rotateLeftInPlaceByCycles(null, 1));
+        assertThrows(NullPointerException.class, () -> rotLeft(null, 1));
+        assertThrows(NullPointerException.class, () -> rotateLeftInPlace(null, 1));
+        assertThrows(NullPointerException.class, () -> rotateLeftInPlaceByCycles(null, 1));
     }
 
     @Test

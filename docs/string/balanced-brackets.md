@@ -13,7 +13,7 @@ Przykłady: `{[()]}` → `YES`, `{[(])}` → `NO`.
 |---|---|
 | Pusty napis | `YES`: nic nie jest niedopasowane |
 | Znak spoza `(){}[]` | pomijany: metoda sprawdza nawiasy także w tekście i kodzie (`f(a[0]) { }` → `YES`) |
-| `null` | `IllegalArgumentException` (a nie `UnsupportedOperationException`: to błędny argument, a nie brak operacji) |
+| `null` | `NullPointerException` od razu na wejściu (`Objects.requireNonNull`), jak w JDK |
 | Głębokość zagnieżdżenia | dowolna, ogranicza ją tylko sterta |
 
 ## Dlaczego porównanie pierwszego z ostatnim nie działa

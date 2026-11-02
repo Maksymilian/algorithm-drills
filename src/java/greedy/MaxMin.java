@@ -2,6 +2,7 @@ package greedy;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /// HackerRank „Angry Children” (`maxMin`): wybierz `k` spośród `n` elementów tak, żeby `max - min`
 /// wybranych, czyli _niesprawiedliwość_, było jak najmniejsze.
@@ -69,7 +70,7 @@ public class MaxMin {
     }
 
     public static int maxMin(int k, List<Integer> arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
 
         int[] values = new int[arr.size()];
         int next = 0;
@@ -80,7 +81,7 @@ public class MaxMin {
     }
 
     public static long maxMinAsLong(int k, int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
         requireSelectable(k, arr.length);
 
         int[] sorted = arr.clone();
@@ -89,7 +90,7 @@ public class MaxMin {
     }
 
     public static long maxMinInPlace(int k, int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
         requireSelectable(k, arr.length);
 
         Arrays.sort(arr);
@@ -97,14 +98,14 @@ public class MaxMin {
     }
 
     public static long maxMinByRadixSort(int k, int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
         requireSelectable(k, arr.length);
 
         return smallestWindowSpread(k, radixSorted(arr));
     }
 
     public static int[] fairestSelection(int k, int[] arr) {
-        if (arr == null) throw new IllegalArgumentException("arr must not be null");
+        Objects.requireNonNull(arr, "arr nie może być null");
         requireSelectable(k, arr.length);
 
         int[] sorted = arr.clone();

@@ -61,9 +61,9 @@ class AbbreviationTest {
 
     @Test
     void rejectsNullInput() {
-        assertThrows(IllegalArgumentException.class, () -> canAbbreviate(null, "A"));
-        assertThrows(IllegalArgumentException.class, () -> canAbbreviate("a", null));
-        assertThrows(IllegalArgumentException.class, () -> abbreviation(null, null));
+        assertThrows(NullPointerException.class, () -> canAbbreviate(null, "A"));
+        assertThrows(NullPointerException.class, () -> canAbbreviate("a", null));
+        assertThrows(NullPointerException.class, () -> abbreviation(null, null));
     }
 
     @Test

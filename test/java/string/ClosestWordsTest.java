@@ -22,9 +22,9 @@ class ClosestWordsTest {
 
     @Test
     void rejectsInvalidParameters() {
-        assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest((String) null, "a", "b"));
-        assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest("a b", null, "b"));
-        assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest("a b", "a", null));
+        assertThrows(NullPointerException.class, () -> ClosestWords.closest((String) null, "a", "b"));
+        assertThrows(NullPointerException.class, () -> ClosestWords.closest("a b", null, "b"));
+        assertThrows(NullPointerException.class, () -> ClosestWords.closest("a b", "a", null));
         assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest("a b", "", "b"));
         assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest("a b", "a", " "));
         assertThrows(IllegalArgumentException.class, () -> ClosestWords.closest("ala ma kota", "ala ma", "kota"));
