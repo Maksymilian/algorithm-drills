@@ -49,6 +49,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Ile sal na spotkania: `PriorityQueue` i zamiatanie na `TreeMap`](docs/collection/meeting-rooms.md)
 - [Klucz → wartość z historią: `TreeMap.floorEntry`](docs/collection/time-map.md)
 - [Losowy znak o zadanym rozkładzie: sumy prefiksowe i wyszukiwanie binarne](docs/collection/weighted-random-char.md)
+- [Komparator graczy: wynik malejąco, imię rosnąco, bez odejmowania](docs/collection/checker.md)
 
 ## graph
 

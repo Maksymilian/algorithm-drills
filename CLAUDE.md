@@ -67,6 +67,25 @@
   IO.println("A jest na %d piętrze".formatted(floor));   // zamiast System.out.printf("...%n", floor)
   ```
 
+## Każde rozwiązanie
+
+- **Zawsze walidujemy parametry publicznych metod.** `null`, puste kolekcje, wartości spoza
+  dozwolonego zakresu i niepoprawne dane rzucają `IllegalArgumentException` z komunikatem po polsku,
+  a nie `NullPointerException` z głębi kodu. Nie zwracamy „magicznej” wartości (np. 0 albo −1) dla
+  błędnego wejścia, jeśli może ona być też poprawnym wynikiem. Co jest błędem, a co poprawnym
+  przypadkiem brzegowym (np. pusty napis), zapisujemy w tabeli założeń w notatce i w Javadocu klasy.
+
+- **Zawsze szukamy przypadków brzegowych i pokrywamy je testami:** puste i jednoelementowe wejście,
+  wartości skrajne (`Integer.MIN_VALUE`, `MAX_VALUE`, przepełnienie), wartości ujemne, duplikaty,
+  `null` wewnątrz kolekcji, nieparzyste długości, duże dane (wydajność, głęboka rekurencja),
+  Unicode (wielkie litery, polskie znaki, emoji). Gdzie się da, porównujemy wynik z prostym
+  wzorcem (przegląd wszystkich możliwości) na losowych danych.
+
+- **Zawsze refaktoryzujemy przed oddaniem:** czytelne nazwy zamiast skrótów, nazwane stałe zamiast
+  magicznych liczb, warunki rozbite na nazwane zmienne lub metody, bez martwego kodu i nieużywanych
+  importów, metody w limicie z sekcji wyżej. Gdy poprawiamy cudze rozwiązanie, wypisujemy, co
+  zmieniliśmy i dlaczego.
+
 ## Dokumentacja
 
 - **Cała dokumentacja po polsku:** notatki w `docs/`, README, Javadoc i komentarze w kodzie.

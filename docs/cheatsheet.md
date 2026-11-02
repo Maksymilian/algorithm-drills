@@ -28,6 +28,7 @@ do których prowadzą linki.
 | „wartość w chwili t”, „najbliższy w dół / w górę” | `TreeMap.floorEntry` / `ceilingEntry` | O(log n) | [historia klucza](collection/time-map.md) |
 | „losuj z wagami” | sumy prefiksowe + wyszukiwanie binarne | O(log k) na losowanie | [losowy znak](collection/weighted-random-char.md) |
 | „get i put w O(1), wyrzucaj najstarszy” | `HashMap` + lista dwukierunkowa | O(1) | [LRU](collection/lru-cache.md) |
+| „sortuj po X malejąco, przy remisie po Y” | `Comparator.comparingInt(...).reversed().thenComparing(...)`, nigdy odejmowanie | O(n log n) | [komparator](collection/checker.md) |
 | „najkrótsza droga”, wagi ≥ 0 | Dijkstra na kopcu | O((V + E) log V) | [Dijkstra](graph/shortest-path.md) |
 | „najkrótsza droga”, wszystkie wagi równe | BFS na `ArrayDeque` | O(V + E) | [Dijkstra](graph/shortest-path.md), dopytania |
 | „czy da się ułożyć z liter”, mały alfabet | licznik `int[26]` | O(długość) | [słowa z liter](string/longest-words-from-letters.md) |

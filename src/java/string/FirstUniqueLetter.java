@@ -12,31 +12,43 @@ package string;
 ///
 /// - `repeated`: bit jest ustawiony, jeśli litera wystąpiła co najmniej dwa razy.
 ///
-/// Po pierwszym przejściu `seen & ~repeated` to litery unikalne. Drugie przejście znajduje
-/// pierwszą z nich w kolejności napisu.
+/// Po pierwszym przejściu `seen & ~repeated` to litery unikalne. Pusta maska oznacza, że żadnej
+/// nie ma, i wtedy od razu zwracamy −1. W przeciwnym razie drugie przejście znajduje pierwszą
+/// z nich w kolejności napisu.
 ///
 /// **Złożoność.** O(n) czasu, O(1) pamięci: dwie zmienne lokalne na stosie, zero obiektów.
-/// Wielkość liter nie ma znaczenia. Znaki spoza a–z pomijamy.
+/// Wielkość liter nie ma znaczenia. Znaki spoza a–z pomijamy. `null` to
+/// `IllegalArgumentException`; pusty napis i napis bez liter to −1.
 public class FirstUniqueLetter {
 
     public static int firstUnique(String s) {
-        int unique = uniqueLetters(s);
+        int unique = uniqueLetters(requireText(s));
+        if (unique == 0) {
+            return -1;
+        }
         for (int i = 0; i < s.length(); i++) {
             if ((bit(s.charAt(i)) & unique) != 0) {
                 return i;
             }
         }
-        return -1;
+        throw new UnsupportedOperationException();
     }
 
     private static int uniqueLetters(String s) {
         int seen = 0, repeated = 0;
         for (int i = 0; i < s.length(); i++) {
             int bit = bit(s.charAt(i));
-            repeated |= seen & bit;   // już była: teraz jest powtórzona
+            repeated |= seen & bit;
             seen |= bit;
         }
         return seen & ~repeated;
+    }
+
+    private static String requireText(String s) {
+        if (s == null) {
+            throw new IllegalArgumentException("brak napisu");
+        }
+        return s;
     }
 
     private static int bit(char c) {

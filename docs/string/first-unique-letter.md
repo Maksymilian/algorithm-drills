@@ -17,7 +17,8 @@ W napisie znajdź pierwszą literę, która występuje dokładnie raz. Nie aloku
 |---|---|
 | Alfabet | litery a–z; `A` i `a` to ta sama litera; inne znaki pomijamy |
 | „Bez pamięci dynamicznej” | żadnego `new`, żadnej kolekcji: tylko zmienne lokalne typów prostych (na stosie) |
-| Wynik | indeks w napisie albo −1 |
+| Wynik | indeks w napisie albo −1 (także dla pustego napisu i napisu bez liter) |
+| `null` | `IllegalArgumentException`; wyjątek tworzy obiekt, ale tylko przy błędnym wywołaniu |
 
 ## Rozwiązanie
 
@@ -28,7 +29,8 @@ repeated |= seen & bit;   // litera już była: teraz jest powtórzona
 seen     |= bit;
 ```
 
-Po pierwszym przejściu `seen & ~repeated` to zbiór liter unikalnych. Drugie przejście zwraca
+Po pierwszym przejściu `seen & ~repeated` to zbiór liter unikalnych. Jeśli jest pusty (`0`),
+od razu zwracamy −1 i drugiego przejścia nie ma. W przeciwnym razie drugie przejście zwraca
 pierwszy znak napisu z tego zbioru.
 
 ## Dlaczego maski bitowe

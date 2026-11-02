@@ -15,7 +15,9 @@ najdłuższe słowa, które da się ułożyć z liter napisu. Odpowiedź: `stop`
 | Alfabet | litery a–z; wielkość liter nie ma znaczenia |
 | Litery | każdej można użyć tyle razy, ile razy występuje w napisie (`"abc"` nie da `"aab"`) |
 | Wynik | wszystkie słowa o największej długości, w kolejności ze słownika |
-| Brzegi | puste słowa pomijamy; nic nie pasuje → pusta lista |
+| Brzegi | puste słowa pomijamy; nic nie pasuje, puste litery albo pusty słownik → pusta lista |
+| Błędne parametry | `null` zamiast liter, słownika albo słowa w słowniku oraz litera spoza a–z w napisie liter → `IllegalArgumentException` |
+| Słowo ze znakiem spoza a–z | to nie błąd: takiego słowa nie da się ułożyć, więc odpada (`"a-b"`, `"żab"`) |
 
 ## Rozwiązanie
 

@@ -1,5 +1,6 @@
 package string;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -26,5 +27,26 @@ class LongestWordsFromLettersTest {
         assertEquals(List.of("Stop"), LongestWordsFromLetters.longestWords("TOESTP", List.of("Stop", "xyz")));
         assertEquals(List.of(), LongestWordsFromLetters.longestWords("abc", List.of("xyz", "")));
         assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("a b", List.of()));
+    }
+
+    @Test
+    void rejectsInvalidParameters() {
+        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords(null, List.of("a")));
+        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("abc", null));
+        assertThrows(IllegalArgumentException.class,
+                () -> LongestWordsFromLetters.longestWords("abc", Arrays.asList("ab", null)));
+        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("ab1", List.of("ab")));
+        assertThrows(IllegalArgumentException.class, () -> LongestWordsFromLetters.longestWords("żab", List.of("ab")));
+    }
+
+    @Test
+    void emptyInputsGiveEmptyResult() {
+        assertEquals(List.of(), LongestWordsFromLetters.longestWords("", List.of("a")));
+        assertEquals(List.of(), LongestWordsFromLetters.longestWords("abc", List.of()));
+    }
+
+    @Test
+    void wordsWithOtherCharactersSimplyDoNotFit() {
+        assertEquals(List.of("ab"), LongestWordsFromLetters.longestWords("abc", List.of("a-b", "ab", "żab")));
     }
 }

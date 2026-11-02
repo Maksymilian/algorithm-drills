@@ -8,8 +8,8 @@ import java.util.Set;
 /// Najdłuższe słowa ze słownika, które da się ułożyć z liter danego napisu.
 ///
 /// **Treść.** Dla liter `"toestp"` i słów `{toes, toe, abc, stop, baseball}`
-/// odpowiedź to `stop` i `toes`. Każdej litery można użyć tyle razy, ile razy występuje
-/// w napisie.
+/// odpowiedź to `stop` i `toes`.
+/// Każdej litery można użyć tyle razy, ile razy występuje w napisie.
 ///
 /// **Pomysł.** Liczymy litery napisu w tablicy `int[26]`. Słowo da się ułożyć, jeśli
 /// żadnej litery nie potrzebuje więcej razy, niż jest dostępna. Przechodzimy po słowach i
@@ -20,20 +20,45 @@ import java.util.Set;
 /// liczb). Sortowanie liter i porównywanie z posortowanym słowem też działa, ale kosztuje
 /// O(k log k) na słowo i nie radzi sobie z „podzbiorem” liter.
 ///
+/// **Walidacja.** `null` zamiast liter, słownika albo słowa w słowniku oraz litera spoza a–z
+/// w napisie liter to `IllegalArgumentException`. Słowo ze znakiem spoza a–z nie jest błędem:
+/// po prostu nie da się go ułożyć.
+///
 /// **Dopytania.** Słownik jest ogromny, a zapytań dużo? Grupujemy słowa według długości i
 /// sprawdzamy od najdłuższych: pierwsza długość z trafieniem kończy szukanie. Litery spoza a–z?
 /// Zamiast `int[26]` używamy `Map<Character, Integer>`.
 public class LongestWordsFromLetters {
 
     public static List<String> longestWords(String letters, Collection<String> words) {
+        requireInputs(letters, words);
         int[] available = countLetters(letters);
         List<String> best = new ArrayList<>();
-        for (String word : words) {
-            if (isWorthChecking(word, best, letters.length()) && canBuild(word, available)) {
-                addCandidate(best, word);
-            }
+        for (var word : words) {
+            consider(best, requireWord(word), available, letters.length());
         }
         return best;
+    }
+
+    private static void consider(List<String> best, String word, int[] available, int letterCount) {
+        if (isWorthChecking(word, best, letterCount) && canBuild(word, available)) {
+            addCandidate(best, word);
+        }
+    }
+
+    private static void requireInputs(String letters, Collection<String> words) {
+        if (letters == null) {
+            throw new IllegalArgumentException("brak liter");
+        }
+        if (words == null) {
+            throw new IllegalArgumentException("brak słownika");
+        }
+    }
+
+    private static String requireWord(String word) {
+        if (word == null) {
+            throw new IllegalArgumentException("słownik zawiera null");
+        }
+        return word;
     }
 
     private static boolean isWorthChecking(String word, List<String> best, int letterCount) {
