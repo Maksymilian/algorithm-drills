@@ -38,10 +38,10 @@ public class MeetingRooms {
     }
 
     public static int minRooms(List<Meeting> meetings) {
-        PriorityQueue<Integer> endTimes = new PriorityQueue<>();   // końce spotkań w zajętych salach
+        PriorityQueue<Integer> endTimes = new PriorityQueue<>();
         for (Meeting m : sortedByStart(meetings)) {
             if (!endTimes.isEmpty() && endTimes.peek() <= m.start()) {
-                endTimes.poll();   // najwcześniej zwalniana sala jest już wolna
+                endTimes.poll();
             }
             endTimes.add(m.end());
         }
