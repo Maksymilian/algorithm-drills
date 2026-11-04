@@ -1,6 +1,7 @@
 package collection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,11 +42,22 @@ import java.util.Set;
 public class PortfolioReconciliation {
 
     private static final String CASH = "Cash";
-    private static final String BUY = "BY";
-    private static final String SELL = "SL";
     private static final String SEPARATOR = "\\s+";
     private static final int POSITION_FIELDS = 2;
     private static final int TRANSACTION_FIELDS = 4;
+
+    private enum Side {
+        BUY("BY", 1),
+        SELL("SL", -1);
+
+        private final String code;
+        private final long direction;
+
+        Side(String code, long direction) {
+            this.code = code;
+            this.direction = direction;
+        }
+    }
 
     private record Transaction(String symbol, long shareChange, long cashChange) {
     }
@@ -77,8 +89,6 @@ public class PortfolioReconciliation {
         return mismatches;
     }
 
-    // symbol nieobecny po danej stronie ma saldo 0
-
     private static Map<String, Long> parsePositions(List<String> lines) {
         Map<String, Long> positions = new LinkedHashMap<>();
         for (String line : lines) {
@@ -95,17 +105,15 @@ public class PortfolioReconciliation {
         String symbol = requireNotCash(fields[0], line);
         long quantity = requirePositive(parseNumber(fields[2], line), line);
         long price = requireNonNegative(parseNumber(fields[3], line), line);
-        long shareChange = direction(fields[1], line) * quantity;
+        long shareChange = parseSide(fields[1], line).direction * quantity;
         return new Transaction(symbol, shareChange, Math.negateExact(Math.multiplyExact(shareChange, price)));
     }
 
-    // +1 dla kupna, −1 dla sprzedaży
-    private static long direction(String side, String line) {
-        return switch (side) {
-            case BUY -> 1;
-            case SELL -> -1;
-            default -> throw new IllegalArgumentException("nieznany rodzaj transakcji: " + line);
-        };
+    private static Side parseSide(String code, String line) {
+        return Arrays.stream(Side.values())
+                .filter(side -> side.code.equals(code))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("nieznany rodzaj transakcji: " + line));
     }
 
     private static String[] split(String line, int expectedFields) {
