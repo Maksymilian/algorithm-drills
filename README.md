@@ -52,6 +52,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Losowy znak o zadanym rozkładzie: sumy prefiksowe i wyszukiwanie binarne](docs/collection/weighted-random-char.md)
 - [Komparator graczy: wynik malejąco, imię rosnąco, bez odejmowania](docs/collection/checker.md)
 - [Trójki w ciągu geometrycznym: jedno przejście i dwie mapy](docs/collection/count-triplets.md)
+- [Uzgodnienie portfela: stan początkowy + transakcje = stan raportowany](docs/collection/portfolio-reconciliation.md)
 
 ## graph
 
