@@ -63,6 +63,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 
 - [Greedy Florist: mnożniki są wymuszone, więc wybieramy tylko parowanie](docs/greedy/greedy-florist.md)
 - [Najmniejsza niesprawiedliwość: posortuj, potem przesuwaj okno `k`](docs/greedy/max-min.md)
+- [Luck Balance: przegraj wszystko, wygraj najtańsze z wymuszonych](docs/greedy/luck-balance.md)
 - Windy, od najmniejszej wersji do pełnej symulacji. Dyspozytor i zamiatanie LOOK to wybory
   zachłanne, podejmowane krok po kroku:
   - [Dwie windy: wersja najmniejsza, jeden posortowany zbiór i „kto dojedzie pierwszy”](docs/greedy/simple-elevators.md)
