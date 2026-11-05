@@ -53,6 +53,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Komparator graczy: wynik malejąco, imię rosnąco, bez odejmowania](docs/collection/checker.md)
 - [Trójki w ciągu geometrycznym: jedno przejście i dwie mapy](docs/collection/count-triplets.md)
 - [Uzgodnienie portfela: stan początkowy + transakcje = stan raportowany](docs/collection/portfolio-reconciliation.md)
+- [Poisonous Plants: ile dni umierają rośliny](docs/collection/poisonous-plants.md)
 
 ## graph
 
@@ -75,6 +76,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Max Subset Sum: dlaczego to programowanie dynamiczne](docs/dynamic/max-subset-sum.md)
 - [Abbreviation: DP i na co idzie jego czas](docs/dynamic/abbreviation.md)
 - [Candies: dwa kierunki złożone w jedno przejście](docs/dynamic/candies.md)
+- [Decibinary Numbers: `x`-ta liczba na posortowanej liście](docs/dynamic/decibinary-numbers.md) (bez rozwiązania)
 
 ## recursion
 

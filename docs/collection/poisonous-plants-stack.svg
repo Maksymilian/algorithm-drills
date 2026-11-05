@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 690" width="960" height="690" role="img" aria-label="Dzień śmierci każdej rośliny dla 6 5 8 4 7 10 9 oraz stan stosu po każdym kroku">
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --d0:#a9a8a0; --d1:#2a78d6; --d2:#eb6834; --cell:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+          --d0:#6b6a65; --d1:#3987e5; --d2:#d95926; --cell:#2c2c2a; }
+  }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; fill: var(--ink2); }
+  .title { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .head { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .val { font-size: 14px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
+  .tick { fill: var(--muted); font-size: 12px; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .small { font-size: 11px; }
+  .bg { fill: var(--surface); }
+  .axis { stroke: var(--axis); stroke-width: 1; }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .b0 { fill: var(--d0); } .b1 { fill: var(--d1); } .b2 { fill: var(--d2); }
+  .t0 { fill: var(--muted); } .t1 { fill: var(--d1); font-weight: 600; } .t2 { fill: var(--d2); font-weight: 600; }
+  .box { fill: var(--cell); stroke-width: 2; }
+  .k0 { stroke: var(--d0); } .k1 { stroke: var(--d1); } .k2 { stroke: var(--d2); }
+  .bracket { fill: none; stroke: var(--ink2); stroke-width: 1.5; }
+  .dashed { fill: none; stroke: var(--ink2); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .ink { fill: var(--ink); }
+</style>
+<rect class="bg" width="960" height="690" rx="8"/>
+<text x="24" y="34" class="title">Poisonous Plants: dzień śmierci każdej rośliny ze stosu</text>
+<text x="24" y="56">Przykład 6 5 8 4 7 10 9. Wynik to największy dzień śmierci, tutaj 2.</text>
+
+<!-- Panel 1 -->
+<text x="24" y="92" class="head">1. Kiedy ginie każda roślina</text>
+<rect x="640" y="80" width="12" height="12" class="b0"/><text x="658" y="91">przeżywa</text>
+<rect x="736" y="80" width="12" height="12" class="b1"/><text x="754" y="91">dzień 1</text>
+<rect x="824" y="80" width="12" height="12" class="b2"/><text x="842" y="91">dzień 2</text>
+
+<line class="axis" x1="70" x2="830" y1="300" y2="300"/>
+<!-- skala 14 px na jednostkę, podstawa y=300 -->
+<rect x="95"  y="216" width="50" height="84"  class="b0"/><text x="120" y="208" class="val" text-anchor="middle">6</text>
+<rect x="205" y="230" width="50" height="70"  class="b0"/><text x="230" y="222" class="val" text-anchor="middle">5</text>
+<rect x="315" y="188" width="50" height="112" class="b1"/><text x="340" y="180" class="val" text-anchor="middle">8</text>
+<rect x="425" y="244" width="50" height="56"  class="b0"/><text x="450" y="236" class="val" text-anchor="middle">4</text>
+<rect x="535" y="202" width="50" height="98"  class="b1"/><text x="560" y="194" class="val" text-anchor="middle">7</text>
+<rect x="645" y="160" width="50" height="140" class="b1"/><text x="670" y="152" class="val" text-anchor="middle">10</text>
+<rect x="755" y="174" width="50" height="126" class="b2"/><text x="780" y="166" class="val" text-anchor="middle">9</text>
+
+<text x="120" y="320" class="t0" text-anchor="middle">przeżywa</text>
+<text x="230" y="320" class="t0" text-anchor="middle">przeżywa</text>
+<text x="340" y="320" class="t1" text-anchor="middle">dzień 1</text>
+<text x="450" y="320" class="t0" text-anchor="middle">przeżywa</text>
+<text x="560" y="320" class="t1" text-anchor="middle">dzień 1</text>
+<text x="670" y="320" class="t1" text-anchor="middle">dzień 1</text>
+<text x="780" y="320" class="t2" text-anchor="middle">dzień 2</text>
+
+<!-- klamra nad 7 i 10 -->
+<path class="bracket" d="M535 140 V130 H695 V140"/>
+<text x="615" y="122" text-anchor="middle">między 4 a 9: max dzień = 1</text>
+<!-- najbliższa mniejsza z lewej -->
+<path class="dashed" d="M450 334 V346 H780 V334"/>
+<text x="615" y="366" text-anchor="middle">dla 9 najbliższa mniejsza z lewej to 4, więc 9 ginie w dniu 1 + 1 = 2</text>
+
+<!-- Panel 2 -->
+<line class="grid" x1="24" x2="936" y1="392" y2="392"/>
+<text x="24" y="422" class="head">2. Stos par wartość / dzień po przetworzeniu kolejnej rośliny</text>
+
+<line class="axis" x1="70" x2="830" y1="560" y2="560"/>
+<text x="120" y="446" class="tick" text-anchor="middle">6</text>
+<text x="230" y="446" class="tick" text-anchor="middle">5</text>
+<text x="340" y="446" class="tick" text-anchor="middle">8</text>
+<text x="450" y="446" class="tick" text-anchor="middle">4</text>
+<text x="560" y="446" class="tick" text-anchor="middle">7</text>
+<text x="670" y="446" class="tick" text-anchor="middle">10</text>
+<text x="780" y="446" class="tick" text-anchor="middle">9</text>
+
+<!-- krok 0 -->
+<rect x="85" y="530" width="70" height="26" rx="4" class="box k0"/><text x="120" y="548" class="mono ink" text-anchor="middle">6/0</text>
+<!-- krok 1 -->
+<rect x="195" y="530" width="70" height="26" rx="4" class="box k0"/><text x="230" y="548" class="mono ink" text-anchor="middle">5/0</text>
+<!-- krok 2 -->
+<rect x="305" y="530" width="70" height="26" rx="4" class="box k0"/><text x="340" y="548" class="mono ink" text-anchor="middle">5/0</text>
+<rect x="305" y="500" width="70" height="26" rx="4" class="box k1"/><text x="340" y="518" class="mono ink" text-anchor="middle">8/1</text>
+<!-- krok 3 -->
+<rect x="415" y="530" width="70" height="26" rx="4" class="box k0"/><text x="450" y="548" class="mono ink" text-anchor="middle">4/0</text>
+<!-- krok 4 -->
+<rect x="525" y="530" width="70" height="26" rx="4" class="box k0"/><text x="560" y="548" class="mono ink" text-anchor="middle">4/0</text>
+<rect x="525" y="500" width="70" height="26" rx="4" class="box k1"/><text x="560" y="518" class="mono ink" text-anchor="middle">7/1</text>
+<!-- krok 5 -->
+<rect x="635" y="530" width="70" height="26" rx="4" class="box k0"/><text x="670" y="548" class="mono ink" text-anchor="middle">4/0</text>
+<rect x="635" y="500" width="70" height="26" rx="4" class="box k1"/><text x="670" y="518" class="mono ink" text-anchor="middle">7/1</text>
+<rect x="635" y="470" width="70" height="26" rx="4" class="box k1"/><text x="670" y="488" class="mono ink" text-anchor="middle">10/1</text>
+<!-- krok 6 -->
+<rect x="745" y="530" width="70" height="26" rx="4" class="box k0"/><text x="780" y="548" class="mono ink" text-anchor="middle">4/0</text>
+<rect x="745" y="500" width="70" height="26" rx="4" class="box k1"/><text x="780" y="518" class="mono ink" text-anchor="middle">7/1</text>
+<rect x="745" y="470" width="70" height="26" rx="4" class="box k2"/><text x="780" y="488" class="mono ink" text-anchor="middle">9/2</text>
+
+<text x="120" y="580" class="tick small" text-anchor="middle">pusty stos → 0</text>
+<text x="230" y="580" class="tick small" text-anchor="middle">zdejmuje 6/0</text>
+<text x="230" y="596" class="tick small" text-anchor="middle">pusty stos → 0</text>
+<text x="340" y="580" class="tick small" text-anchor="middle">nic, max 0 → 1</text>
+<text x="450" y="580" class="tick small" text-anchor="middle">zdejmuje 8/1, 5/0</text>
+<text x="450" y="596" class="tick small" text-anchor="middle">pusty stos → 0</text>
+<text x="560" y="580" class="tick small" text-anchor="middle">nic, max 0 → 1</text>
+<text x="670" y="580" class="tick small" text-anchor="middle">nic, max 0 → 1</text>
+<text x="780" y="580" class="tick small" text-anchor="middle">zdejmuje 10/1</text>
+<text x="780" y="596" class="tick small" text-anchor="middle">max 1 → 2</text>
+
+<line class="grid" x1="24" x2="936" y1="618" y2="618"/>
+<text x="24" y="642">Zdejmujemy ze stosu rośliny z pestycydem ≥ bieżącej i zapamiętujemy największy ich dzień śmierci.</text>
+<text x="24" y="662">Pusty stos: nikt z lewej nie jest mniejszy, roślina przeżywa (0). W przeciwnym razie ginie w dniu max + 1.</text>
+</svg>

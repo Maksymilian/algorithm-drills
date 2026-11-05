@@ -42,7 +42,6 @@ public class LuckBalance {
     private static final int FIELDS = 2;
     private static final int UNIMPORTANT = 0;
     private static final int IMPORTANT = 1;
-    private static final int WIN_COST_FACTOR = 2;
 
     public static int luckBalance(int k, int[][] contests) {
         requireValid(k, contests);
@@ -50,7 +49,7 @@ public class LuckBalance {
         int[] important = sortedImportantLuck(contests);
         int mustWin = Math.max(0, important.length - k);
         long wonLuck = Arrays.stream(important, 0, mustWin).asLongStream().sum();
-        return Math.toIntExact(loseEverything - WIN_COST_FACTOR * wonLuck);
+        return Math.toIntExact(loseEverything - 2 * wonLuck);
     }
 
     private static int[] sortedImportantLuck(int[][] contests) {
