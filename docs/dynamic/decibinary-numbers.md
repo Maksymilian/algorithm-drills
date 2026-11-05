@@ -96,11 +96,35 @@ Zera wiodące znikają same, gdy złożymy cyfry w liczbę `long`: na rysunku `0
 to wyszukiwanie binarne po wartościach, O(log V), i wybór cyfr, najwyżej 10 prób na pozycję,
 czyli O(10 · P).
 
-## Do ustalenia przy rozwiązaniu
+## Założenia
 
-- jak dobrać `V` i `P`: najmniejsze `V`, dla którego suma rozmiarów grup `0..V` sięga
-  największego `x`, i liczba bitów `V` jako `P`; sumy prefiksowe trzeba liczyć w `long`;
-- walidacja: `x < 1` jako `IllegalArgumentException`;
-- czy wynik zawsze mieści się w `long` dla największego `x` (zapis decybinarny ma tyle cyfr, ile
-  bitów potrzeba na wartość, więc przy dużych wartościach to trzeba policzyć);
-- wzorzec do testów: wygenerować listę przeglądem wszystkich zapisów dla małych wartości i porównać.
+| | |
+|---|---|
+| `x` | od 1 do 10¹⁶; poza zakresem `IllegalArgumentException` |
+| Wynik | `long` bez zer wiodących |
+
+Górną granicę 10¹⁶ przyjąłem z oryginału na HackerRank (patrz „Ograniczenia”); w kodzie to stała
+`MAX_POSITION`.
+
+## Liczby dla `x ≤ 10^16`
+
+- Rozmiary grup liczymy jedną rekurencją bez z góry znanego zakresu: najmłodsza cyfra `d` ma
+  parzystość `v`, a reszta to zapis wartości `(v − d) / 2`, więc
+  `count[v] = suma po d ≡ v (mod 2), d ≤ 9 z count[(v − d) / 2]`. Kolejne wartości dokładamy, aż
+  suma rozmiarów sięgnie 10¹⁶. Wychodzi `V = 285 112`, czyli 19 bitów: `P = 19` pozycji.
+- Tablica `ways` ma 20 wierszy po 285 113 liczb `long`, ok. 45 MB. Liczymy ją raz, przy pierwszym
+  zapytaniu (klasa-schowek `Tables`).
+- Najstarsza pozycja ma wagę 2¹⁸ = 262 144, a `V < 2 · 2¹⁸`, więc stoi na niej najwyżej cyfra 1.
+  Wynik ma najwyżej 19 cyfr i jest mniejszy niż 2·10¹⁸, mieści się w `long`.
+- Rozmiar grupy dochodzi do ok. 1,1·10¹¹, a sumy prefiksowe do 10¹⁶, więc obie tablice są `long`.
+
+## Pułapki
+
+- Wartość wyszukujemy po `x − 1` w sumach prefiksowych `positionsBefore`, żeby ostatnia pozycja
+  grupy (np. `x = 10`, wartość 4) nie trafiła do grupy następnej.
+- Porównanie „jak zwykłe liczby” działa jako porządek leksykograficzny tylko przy tej samej liczbie
+  cyfr, dlatego wybieramy cyfry na wszystkich `P` pozycjach, także zera wiodące.
+
+Rozwiązanie: `src/java/dynamic/DecibinaryNumbers.java`. Test porównuje pierwsze pozycje z listą
+zbudowaną przeglądem wszystkich liczb poniżej 10⁶ (wszystkie zapisy wartości mniejszych niż 40)
+i sprawdza porządek tysiąca pozycji przed 10¹⁶.

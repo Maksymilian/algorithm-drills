@@ -76,7 +76,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Max Subset Sum: dlaczego to programowanie dynamiczne](docs/dynamic/max-subset-sum.md)
 - [Abbreviation: DP i na co idzie jego czas](docs/dynamic/abbreviation.md)
 - [Candies: dwa kierunki złożone w jedno przejście](docs/dynamic/candies.md)
-- [Decibinary Numbers: `x`-ta liczba na posortowanej liście](docs/dynamic/decibinary-numbers.md) (bez rozwiązania)
+- [Decibinary Numbers: `x`-ta liczba na posortowanej liście](docs/dynamic/decibinary-numbers.md)
 
 ## recursion
 
