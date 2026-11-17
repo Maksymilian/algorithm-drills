@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 800" width="960" height="800" role="img" aria-label="Przebieg backfillu: plan na sucho, sprawdzenie okna partycji, nowa wersja obok starej, walidacja, podmiana jedną operacją, powiadomienia po całym przebiegu, a później usunięcie starej wersji albo wycofanie">
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --d0:#a9a8a0; --d1:#2a78d6; --d2:#eb6834; --cell:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#4a4a46;
+          --d0:#6b6a65; --d1:#3987e5; --d2:#d95926; --cell:#2c2c2a; }
+  }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; fill: var(--ink2); }
+  .title { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .head { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .small { font-size: 11px; fill: var(--muted); }
+  .bg { fill: var(--surface); }
+  .box { fill: var(--cell); stroke: var(--axis); stroke-width: 1; }
+  .src { fill: var(--cell); stroke: var(--d1); stroke-width: 1.5; }
+  .step { fill: var(--cell); stroke: var(--d1); stroke-width: 2; }
+  .stop { fill: var(--cell); stroke: var(--d2); stroke-width: 2; }
+  .later { fill: var(--cell); stroke: var(--d0); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .no { stroke: var(--d2); stroke-width: 1.5; fill: none; }
+  .dash { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  .loop { stroke: var(--d1); stroke-width: 1.5; fill: none; }
+  .loop-t { fill: var(--d1); font-size: 11px; font-weight: 600; }
+  .no-t { fill: var(--d2); font-size: 11px; font-weight: 600; }
+  .tip { fill: var(--muted); }
+  .tip-no { fill: var(--d2); }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker><marker id="arrow-no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip-no" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="bg" width="960" height="800"/>
+<text class="title" x="24" y="32">Backfill krok po kroku</text>
+<text x="24" y="52">Każda partycja osobno: odrzucenie jednej nie zatrzymuje pozostałych. Dziennik zdarzeń nigdy się nie zmienia.</text>
+<rect class="src" x="40" y="76" width="280" height="56" rx="8"/>
+<text class="head" x="54" y="98">Dziennik zdarzeń provisioningu</text>
+<text x="54" y="116">źródło prawdy, tylko do odczytu</text>
+<rect class="src" x="640" y="76" width="280" height="56" rx="8"/>
+<text class="head" x="654" y="98">Tabela usług, partycje miesięczne</text>
+<text x="654" y="116">v1 i v2 obok siebie, czytane jako v2</text>
+<rect class="step" x="300" y="160" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="182">1. plan(od, do)</text>
+<text x="314" y="200">liczy na sucho, porównuje i sprawdza; nic nie zapisuje</text>
+<rect class="step" x="300" y="260" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="282">2. Miesiąc w oknie?</text>
+<text x="314" y="300">zamknięty i najwyżej 12 miesięcy wstecz</text>
+<rect class="step" x="300" y="360" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="382">3. Nowa wersja obok starej</text>
+<text x="314" y="400">nowa logika i nowy schemat; stara jest nietknięta</text>
+<rect class="step" x="300" y="460" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="482">4. Walidacja</text>
+<text x="314" y="500">nie gubi wierszy · próg zmian statusu · kodowanie</text>
+<rect class="step" x="300" y="560" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="582">5. Podmiana jedną operacją</text>
+<text x="314" y="600">compare-and-swap; stara wersja zostaje odłożona</text>
+<text class="small" x="492" y="240">operator wybiera miesiące, zwykle te z CORRECTION</text>
+<line class="arrow" x1="480" y1="216" x2="480" y2="256" marker-end="url(#arrow)"/>
+<line class="arrow" x1="480" y1="316" x2="480" y2="356" marker-end="url(#arrow)"/>
+<line class="arrow" x1="480" y1="416" x2="480" y2="456" marker-end="url(#arrow)"/>
+<line class="arrow" x1="480" y1="516" x2="480" y2="556" marker-end="url(#arrow)"/>
+<path class="arrow" d="M180,132 L180,188 L294,188" marker-end="url(#arrow)"/>
+<path class="arrow" d="M780,132 L780,188 L666,188" marker-end="url(#arrow)"/>
+<rect class="stop" x="690" y="260" width="250" height="56" rx="8"/>
+<text class="head" x="704" y="282">nie: IllegalArgumentException</text>
+<text x="704" y="300">cała lista odrzucona przed zmianami</text>
+<line class="no" x1="660" y1="288" x2="684" y2="288" marker-end="url(#arrow-no)"/>
+<rect class="stop" x="690" y="460" width="250" height="56" rx="8"/>
+<text class="head" x="704" y="482">nie: partycja odrzucona</text>
+<text x="704" y="500">nietknięta, problemy w raporcie</text>
+<line class="no" x1="660" y1="488" x2="684" y2="488" marker-end="url(#arrow-no)"/>
+<path class="loop" d="M290,616 L270,616 L270,360 L290,360"/>
+<text class="loop-t" transform="translate(262,488) rotate(-90)" text-anchor="middle">dla każdego miesiąca z listy</text>
+<rect class="step" x="300" y="660" width="360" height="56" rx="8"/>
+<text class="head" x="314" y="682">6. Powiadomienia po całym przebiegu</text>
+<text x="314" y="700">1 SMS na abonenta, tylko gdy zmienił się status</text>
+<line class="arrow" x1="480" y1="616" x2="480" y2="656" marker-end="url(#arrow)"/>
+<rect class="later" x="40" y="652" width="230" height="72" rx="8"/>
+<text class="head" x="54" y="674">rollback(miesiąc)</text>
+<text class="small" x="54" y="692">później, jeśli wynik jest zły:</text>
+<text x="54" y="710">przywraca starą wersję</text>
+<rect class="later" x="690" y="652" width="250" height="72" rx="8"/>
+<text class="head" x="704" y="674">dropReplaced(miesiąc)</text>
+<text class="small" x="704" y="692">później, po sprawdzeniu wyniku:</text>
+<text x="704" y="710">usuwa starą wersję na dobre</text>
+<line class="dash" x1="300" y1="688" x2="276" y2="688" marker-end="url(#arrow)"/>
+<line class="dash" x1="660" y1="688" x2="684" y2="688" marker-end="url(#arrow)"/>
+<text class="small" x="24" y="752">Plan i walidacja liczą to samo, co zapisze backfill, więc plan mówi z góry, które partycje i którzy abonenci się zmienią.</text>
+<text class="small" x="24" y="772">Ponowny backfill tej samej partycji daje UP_TO_DATE: nic nie podmienia i nikogo nie powiadamia.</text>
+</svg>
