@@ -54,6 +54,7 @@ mvn -q compile && java -cp target/classes graph.ShortestPath   # demo: większo�
 - [Trójki w ciągu geometrycznym: jedno przejście i dwie mapy](docs/collection/count-triplets.md)
 - [Uzgodnienie portfela: stan początkowy + transakcje = stan raportowany](docs/collection/portfolio-reconciliation.md)
 - [Poisonous Plants: ile dni umierają rośliny](docs/collection/poisonous-plants.md)
+- [Backfill usług abonenta: partycje miesięczne, walidacja, podmiana i powiadomienia](docs/collection/service-backfill.md)
 
 ## graph
 
