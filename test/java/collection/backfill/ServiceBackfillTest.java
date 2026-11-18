@@ -1,4 +1,4 @@
-package collection;
+package collection.backfill;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -27,22 +27,19 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-import collection.ServiceBackfill.Action;
-import collection.ServiceBackfill.Channel;
-import collection.ServiceBackfill.CurrentPartition;
-import collection.ServiceBackfill.EventType;
-import collection.ServiceBackfill.LegacyPartition;
-import collection.ServiceBackfill.LegacyServiceRow;
-import collection.ServiceBackfill.Notification;
-import collection.ServiceBackfill.Partition;
-import collection.ServiceBackfill.PartitionPlan;
-import collection.ServiceBackfill.Policy;
-import collection.ServiceBackfill.ProvisioningEvent;
-import collection.ServiceBackfill.Report;
-import collection.ServiceBackfill.ServiceRow;
-import collection.ServiceBackfill.Status;
-import collection.ServiceBackfill.StatusCorrection;
-import collection.ServiceBackfill.Table;
+import collection.backfill.model.Channel;
+import collection.backfill.model.EventType;
+import collection.backfill.model.LegacyServiceRow;
+import collection.backfill.model.ProvisioningEvent;
+import collection.backfill.model.ServiceRow;
+import collection.backfill.model.Status;
+import collection.backfill.notification.Notification;
+import collection.backfill.notification.StatusCorrection;
+import collection.backfill.table.CurrentPartition;
+import collection.backfill.table.LegacyPartition;
+import collection.backfill.table.Partition;
+import collection.backfill.table.Table;
+import collection.backfill.text.TextRepair;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -107,21 +104,21 @@ class ServiceBackfillTest {
     @Test
     void repairTextUndoesUtf8ReadAsLatin1() {
         for (String text : List.of(ROAMING, ESIM, "ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ", "Łódź", "Pakiet 🎉", "日本")) {
-            assertEquals(text, ServiceBackfill.repairText(readAsLatin1(text)), "naprawa: " + text);
+            assertEquals(text, TextRepair.repair(readAsLatin1(text)), "naprawa: " + text);
         }
     }
 
     @Test
     void repairTextLeavesCorrectTextUnchanged() {
         for (String text : List.of("", "ASCII", "Łódź", "Café", "Ó", "óó", "zniżka", "Pakiet 🎉", "\u0080")) {
-            assertEquals(text, ServiceBackfill.repairText(text), "poprawny napis zostaje: " + text);
+            assertEquals(text, TextRepair.repair(text), "poprawny napis zostaje: " + text);
         }
     }
 
     @Test
     void repairTextRemovesOnlyOneLayerOfMangling() {
         String twice = readAsLatin1(readAsLatin1(ESIM));
-        assertEquals(readAsLatin1(ESIM), ServiceBackfill.repairText(twice), "zostaje jedna warstwa");
+        assertEquals(readAsLatin1(ESIM), TextRepair.repair(twice), "zostaje jedna warstwa");
     }
 
     @Test
@@ -129,8 +126,8 @@ class ServiceBackfillTest {
         Random random = new Random(42);
         for (int round = 0; round < 2_000; round++) {
             String text = randomPolishText(random);
-            assertEquals(text, ServiceBackfill.repairText(text), "poprawny: " + text);
-            assertEquals(text, ServiceBackfill.repairText(readAsLatin1(text)), "zepsuty: " + text);
+            assertEquals(text, TextRepair.repair(text), "poprawny: " + text);
+            assertEquals(text, TextRepair.repair(readAsLatin1(text)), "zepsuty: " + text);
         }
     }
 
@@ -257,6 +254,18 @@ class ServiceBackfillTest {
     }
 
     @Test
+    void failedNotificationDoesNotStopOtherDeliveriesAndIsReported() {
+        List<Notification> delivered = new ArrayList<>();
+        ServiceBackfill failingFirst = new ServiceBackfill(table, events, NOW, LENIENT,
+                notification -> deliverUnless(ACTIVATED_AFTER_CANCEL, notification, delivered));
+        Report report = failingFirst.backfill(List.of(MARCH, APRIL, JUNE, SEPTEMBER));
+        assertEquals(List.of(MARCH, APRIL, JUNE, SEPTEMBER), months(report.applied()), "podmiana zostaje");
+        assertEquals(List.of(SUSPENDED_AFTER_RESUME), delivered.stream().map(Notification::msisdn).toList());
+        assertEquals(List.of(ACTIVATED_AFTER_CANCEL), report.undelivered().stream().map(Notification::msisdn).toList());
+        assertEquals(2, report.notifications().size(), "raport zawiera wszystkie powiadomienia");
+    }
+
+    @Test
     void notificationGroupsAllCorrectionsOfOneSubscriber() {
         Notification notification = job.backfill(List.of(MARCH, APRIL)).notifications().getFirst();
         assertEquals(1, sent.size(), "jedno powiadomienie mimo dwóch partycji");
@@ -311,7 +320,7 @@ class ServiceBackfillTest {
         Report report = job.backfill(List.of(MARCH, MARCH));
         assertEquals(List.of(MARCH), months(report.applied()));
         assertEquals(1, report.notifications().getFirst().corrections().size());
-        assertEquals(new Report(List.of(), List.of(), List.of(), List.of()), job.backfill(List.of()));
+        assertEquals(new Report(List.of(), List.of(), List.of(), List.of(), List.of()), job.backfill(List.of()));
     }
 
     @Test
@@ -483,7 +492,7 @@ class ServiceBackfillTest {
     @Test
     void nullsAreRejectedByStaticMethods() {
         List<ProvisioningEvent> withNull = Arrays.asList(events.getFirst(), null);
-        assertThrows(NullPointerException.class, () -> ServiceBackfill.repairText(null));
+        assertThrows(NullPointerException.class, () -> TextRepair.repair(null));
         assertThrows(NullPointerException.class, () -> ServiceBackfill.currentSnapshot(null, MARCH));
         assertThrows(NullPointerException.class, () -> ServiceBackfill.legacySnapshot(events, null));
         assertThrows(NullPointerException.class, () -> ServiceBackfill.currentSnapshot(withNull, MARCH));
@@ -777,5 +786,12 @@ class ServiceBackfillTest {
             return "🎉";
         }
         return String.valueOf(POLISH_ALPHABET.charAt(random.nextInt(POLISH_ALPHABET.length())));
+    }
+
+    private static void deliverUnless(String failing, Notification notification, List<Notification> delivered) {
+        if (notification.msisdn().equals(failing)) {
+            throw new IllegalStateException("bramka SMS niedostępna");
+        }
+        delivered.add(notification);
     }
 }

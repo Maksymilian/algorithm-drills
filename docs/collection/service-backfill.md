@@ -1,7 +1,18 @@
 # Backfill usług abonenta: partycje miesięczne, walidacja, podmiana i powiadomienia
 
-Kod: [`ServiceBackfill.java`](../../src/java/collection/ServiceBackfill.java),
-testy: [`ServiceBackfillTest.java`](../../test/java/collection/ServiceBackfillTest.java).
+Kod: pakiet [`collection.backfill`](../../src/java/collection/backfill), główna klasa
+[`ServiceBackfill.java`](../../src/java/collection/backfill/ServiceBackfill.java),
+testy: [`ServiceBackfillTest.java`](../../test/java/collection/backfill/ServiceBackfillTest.java).
+
+| Pakiet | Co zawiera |
+|---|---|
+| `collection.backfill` | algorytm (`ServiceBackfill`), zasady (`Policy`), plan (`PartitionPlan`, `Action`), raport (`Report`), demo |
+| `collection.backfill.model` | zdarzenia i wiersze: `ProvisioningEvent`, `ServiceRow`, `LegacyServiceRow`, `ServiceKey`, `Status`, `Channel`, `EventType` |
+| `collection.backfill.table` | partycje (`Partition`, `LegacyPartition`, `CurrentPartition`) i tabela z podmianą (`Table`) |
+| `collection.backfill.notification` | `StatusCorrection` i `Notification` |
+| `collection.backfill.text` | naprawa kodowania (`TextRepair`) |
+
+Każda klasa, rekord i typ wyliczeniowy ma własny plik.
 
 Ta notatka tłumaczy pojęcia na jednym przykładzie z telekomunikacji: czym jest backfill, jak ustalić
 z góry, których partycji, kolumn i abonentów dotyczy, jak sprawdzić wynik przed zapisem, jak
@@ -263,6 +274,10 @@ pierwszego backfillu.
 | Utworzona brakująca partycja | nie, nikt nie widział jej starej wersji |
 | Drugi przebieg tego samego backfillu | nie, nic się nie zmieniło |
 
+Wysyłka idzie po podmianie partycji, więc jej błąd nie może cofnąć backfillu. Każde powiadomienie
+wysyłamy osobno: gdy bramka SMS rzuci wyjątek przy jednym abonencie, pozostali i tak dostają swoje,
+a nieudane trafiają do `Report.undelivered`, skąd można je wysłać ponownie.
+
 Jeden abonent dostaje **jedno** powiadomienie na przebieg, ze wszystkimi poprawkami. Abonent
 `48600100400` ma poprawki w marcu i w kwietniu i dostaje jeden SMS, a nie dwa:
 
@@ -345,7 +360,7 @@ przelicza 10 partycji, do 30 tysięcy usług w każdej, w ułamku sekundy.
 ## Uruchomienie
 
 ```sh
-mvn -q compile && java -cp target/classes collection.ServiceBackfill
+mvn -q compile && java -cp target/classes collection.backfill.ServiceBackfill
 mvn test -Dtest='ServiceBackfillTest'
 ```
 
