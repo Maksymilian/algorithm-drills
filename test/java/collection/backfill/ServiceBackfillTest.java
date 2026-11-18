@@ -31,6 +31,7 @@ import collection.backfill.model.Channel;
 import collection.backfill.model.EventType;
 import collection.backfill.model.LegacyServiceRow;
 import collection.backfill.model.ProvisioningEvent;
+import collection.backfill.model.ServiceKey;
 import collection.backfill.model.ServiceRow;
 import collection.backfill.model.Status;
 import collection.backfill.notification.Notification;
@@ -213,9 +214,19 @@ class ServiceBackfillTest {
     void planWindowBoundaries() {
         ServiceBackfill empty = new ServiceBackfill(new Table(), List.of(), NOW, Policy.DEFAULT, sent::add);
         List<Action> actions = empty.plan(OCTOBER_2025, NOVEMBER_2025).stream().map(PartitionPlan::action).toList();
-        assertEquals(List.of(Action.FROZEN, Action.UP_TO_DATE), actions, "okno to 12 ostatnich zamkniętych miesięcy");
+        assertEquals(List.of(Action.FROZEN, Action.CORRECTION), actions, "okno to 12 ostatnich zamkniętych miesięcy");
         List<Action> latest = empty.plan(OCTOBER, NOW.plusMonths(1)).stream().map(PartitionPlan::action).toList();
-        assertEquals(List.of(Action.UP_TO_DATE, Action.OPEN, Action.OPEN), latest, "bieżący i przyszłe są otwarte");
+        assertEquals(List.of(Action.CORRECTION, Action.OPEN, Action.OPEN), latest, "bieżący i przyszłe są otwarte");
+    }
+
+    @Test
+    void missingPartitionIsCreatedEvenFromEmptyLogAndThenSkipped() {
+        Table gaps = new Table();
+        ServiceBackfill empty = new ServiceBackfill(gaps, List.of(), NOW, Policy.DEFAULT, sent::add);
+        assertEquals(List.of(MARCH), months(empty.backfill(List.of(MARCH)).applied()), "luka jest wypełniana");
+        assertEquals(new CurrentPartition(List.of()), gaps.partition(MARCH).orElseThrow());
+        assertEquals(List.of(MARCH), months(empty.backfill(List.of(MARCH)).skipped()), "pusta istniejąca partycja jest aktualna");
+        assertEquals(List.of(), sent);
     }
 
     @Test
@@ -256,12 +267,15 @@ class ServiceBackfillTest {
     @Test
     void failedNotificationDoesNotStopOtherDeliveriesAndIsReported() {
         List<Notification> delivered = new ArrayList<>();
+        List<Notification> failed = new ArrayList<>();
         ServiceBackfill failingFirst = new ServiceBackfill(table, events, NOW, LENIENT,
-                notification -> deliverUnless(ACTIVATED_AFTER_CANCEL, notification, delivered));
+                notification -> deliverUnless(ACTIVATED_AFTER_CANCEL, notification, delivered, failed));
         Report report = failingFirst.backfill(List.of(MARCH, APRIL, JUNE, SEPTEMBER));
         assertEquals(List.of(MARCH, APRIL, JUNE, SEPTEMBER), months(report.applied()), "podmiana zostaje");
         assertEquals(List.of(SUSPENDED_AFTER_RESUME), delivered.stream().map(Notification::msisdn).toList());
-        assertEquals(List.of(ACTIVATED_AFTER_CANCEL), report.undelivered().stream().map(Notification::msisdn).toList());
+        assertEquals(List.of(ACTIVATED_AFTER_CANCEL), failed.stream().map(Notification::msisdn).toList());
+        assertEquals(failed, report.undelivered(), "w raporcie to samo powiadomienie, z tymi samymi poprawkami");
+        assertEquals(2, failed.getFirst().corrections().size(), "poprawki z marca i kwietnia");
         assertEquals(2, report.notifications().size(), "raport zawiera wszystkie powiadomienia");
     }
 
@@ -291,6 +305,38 @@ class ServiceBackfillTest {
                 Channel.UNKNOWN), rowOf(table.read(MARCH), ACTIVATED_AFTER_CANCEL),
                 "planName czytany jako offerName, kanał nieznany");
         assertEquals(List.of(), table.read(YearMonth.of(2020, 1)), "brak partycji czyta się jak pustą");
+    }
+
+    @Test
+    void channelFixInCurrentPartitionIsCorrectionWithoutNotifications() {
+        CurrentPartition expected = ServiceBackfill.currentSnapshot(events, MARCH);
+        List<ServiceRow> wrongChannel = expected.rows().stream()
+                .map(row -> new ServiceRow(row.msisdn(), row.serviceCode(), row.offerName(), row.status(), Channel.CALL_CENTER))
+                .toList();
+        Table current = new Table();
+        current.load(MARCH, new CurrentPartition(wrongChannel));
+        Report report = new ServiceBackfill(current, events, NOW, LENIENT, sent::add).backfill(List.of(MARCH));
+        assertEquals(Action.CORRECTION, report.applied().getFirst().action(), "kanał to dane, nie schemat");
+        assertEquals(expected, current.partition(MARCH).orElseThrow());
+        assertEquals(List.of(), sent, "zmiana kanału nie jest zmianą statusu");
+    }
+
+    @Test
+    void cleanNameFromOtherChannelsIsNotRewritten() {
+        String literal = "Znak Â© w nazwie";
+        List<ProvisioningEvent> log = List.of(eventWith(1, "48600100700", "DATA_10GB", Channel.APP, literal),
+                eventWith(2, "48600100800", "DATA_10GB", Channel.CALL_CENTER, literal),
+                eventWith(3, "48600100900", "DATA_10GB", Channel.SHOP, literal));
+        List<String> names = ServiceBackfill.currentSnapshot(log, MARCH).rows().stream().map(ServiceRow::offerName).toList();
+        assertEquals(List.of(literal, literal, "Znak © w nazwie"), names, "naprawiamy tylko nazwy ze sklepu");
+        Report report = new ServiceBackfill(new Table(), log, NOW, Policy.DEFAULT, sent::add).backfill(List.of(MARCH));
+        assertEquals(List.of(MARCH), months(report.applied()), "czysta nazwa z aplikacji nie blokuje partycji");
+    }
+
+    @Test
+    void serviceKeyRejectsNulls() {
+        assertThrows(NullPointerException.class, () -> new ServiceKey(null, "DATA_10GB"));
+        assertThrows(NullPointerException.class, () -> new ServiceKey("48600100200", null));
     }
 
     @Test
@@ -335,14 +381,6 @@ class ServiceBackfillTest {
     }
 
     @Test
-    void emptyLogAndEmptyTableAreUpToDate() {
-        Table empty = new Table();
-        Report report = new ServiceBackfill(empty, List.of(), NOW, Policy.DEFAULT, sent::add).backfill(List.of(MARCH));
-        assertEquals(List.of(MARCH), months(report.skipped()));
-        assertTrue(empty.partition(MARCH).isEmpty(), "pustej partycji nie tworzymy");
-    }
-
-    @Test
     void partitionThatWouldLoseRowsIsRejectedAndOthersProceed() {
         LegacyServiceRow orphan = new LegacyServiceRow("48699999999", "ESIM_WATCH", ESIM, Status.ACTIVE, 1);
         Table withOrphan = demoTable(events, List.of(orphan));
@@ -350,7 +388,7 @@ class ServiceBackfillTest {
         Report report = new ServiceBackfill(withOrphan, events, NOW, LENIENT, sent::add).backfill(List.of(MARCH, JUNE));
         assertEquals(List.of(MARCH), months(report.rejected()));
         assertEquals(List.of(JUNE), months(report.applied()), "pozostałe partycje idą dalej");
-        assertEquals(List.of("wiersz zniknąłby z partycji, bo w dzienniku nie ma jego zdarzeń: 48699999999/ESIM_WATCH"),
+        assertEquals(List.of("wiersz zniknąłby z partycji, bo przeliczenie dziennika go nie odtworzyło: 48699999999/ESIM_WATCH"),
                 report.rejected().getFirst().problems());
         assertSame(march, withOrphan.partition(MARCH).orElseThrow(), "odrzucona partycja nietknięta");
     }
@@ -788,8 +826,10 @@ class ServiceBackfillTest {
         return String.valueOf(POLISH_ALPHABET.charAt(random.nextInt(POLISH_ALPHABET.length())));
     }
 
-    private static void deliverUnless(String failing, Notification notification, List<Notification> delivered) {
+    private static void deliverUnless(String failing, Notification notification, List<Notification> delivered,
+                                      List<Notification> failed) {
         if (notification.msisdn().equals(failing)) {
+            failed.add(notification);
             throw new IllegalStateException("bramka SMS niedostępna");
         }
         delivered.add(notification);

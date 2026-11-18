@@ -78,7 +78,7 @@ Skoro i tak przepisujemy partycje, przy okazji zmieniamy schemat:
 | | Stara: `legacySnapshot` | Nowa: `currentSnapshot` |
 |---|---|---|
 | Kolejność zdarzeń | przyjścia (`sequence`) | wystąpienia (`occurredAt`, przy remisie `sequence`) |
-| Nazwa oferty | kopiowana bez zmian | z naprawionym kodowaniem |
+| Nazwa oferty | kopiowana bez zmian | z naprawionym kodowaniem, gdy aktywacja przyszła ze sklepu |
 | Kanał aktywacji | pomijany | kolumna `activationChannel` |
 | Kolumny | `planName`, `legacyStatusCode` | `offerName`, `activationChannel` |
 
@@ -148,9 +148,9 @@ Znaczenie akcji:
 |---|---|---|
 | `FROZEN` | miesiąc starszy niż okno | odmawia |
 | `OPEN` | bieżący albo przyszły miesiąc | odmawia |
-| `UP_TO_DATE` | już w nowym schemacie i taka sama jak przeliczona; albo jej brak, a danych też brak | pomija |
+| `UP_TO_DATE` | już w nowym schemacie i taka sama jak przeliczona (także obie puste) | pomija |
 | `SCHEMA_ONLY` | te same dane, inny tylko schemat | przepisuje, nikogo nie powiadamia |
-| `CORRECTION` | zmienia się status, nazwa albo zestaw wierszy | przepisuje i powiadamia o zmianach statusu |
+| `CORRECTION` | zmienia się status, nazwa albo zestaw wierszy; w partycji już w nowym schemacie także kanał aktywacji; partycji brak (także przy pustym dzienniku) | przepisuje albo tworzy i powiadamia o zmianach statusu |
 
 **Izolacja.** Operator podaje listę miesięcy. Rozsądna kolejność: najpierw tylko `CORRECTION`, czyli
 mały zakres, który da się sprawdzić ręcznie, a schemat później, osobnym przebiegiem, nawet partycja
@@ -179,8 +179,9 @@ ale wiąże partycje w łańcuch: poprawka w marcu wymusza przeliczenie po kolei
 Sprawdzanie nowego statusu tym samym kodem, który go policzył, niczego nie dowodzi. Sprawdzamy
 niezmienniki, które wykryją błąd nowej logiki albo niepełne źródło:
 
-1. **Nie gubimy wierszy.** Każda usługa ze starej partycji musi być w nowej. Brak oznacza, że w
-   dzienniku nie ma jej zdarzeń (na przykład usunięto je po okresie przechowywania). Przeliczenie
+1. **Nie gubimy wierszy.** Każda usługa ze starej partycji musi być w nowej. Brak oznacza, że
+   przeliczenie dziennika jej nie odtworzyło: zdarzeń nie ma (na przykład usunięto je po okresie
+   przechowywania) albo zostały pominięte (na przykład brak aktywacji przed nimi). Przeliczenie
    skasowałoby wtedy wiersz, który klient już widział.
 1. **Próg zmian statusu.** Jeśli status zmienia się w więcej niż `maxStatusChangePercent` wierszy
    (domyślnie 20%), bardziej prawdopodobne jest, że myli się nowa logika, a nie stara. Na granicy
@@ -234,8 +235,9 @@ Napis naprawiamy tylko wtedy, gdy spełnia trzy warunki naraz:
 
 Emoji też przechodzą w obie strony (cztery bajty UTF-8 na jeden znak). Ryzyko: poprawny napis w
 ISO-8859-1, który przypadkiem jest też poprawnym UTF-8 (na przykład celowo wpisane `Ã³`), zostałby
-„naprawiony”. W nazwach ofert to się nie zdarza. W danych ogólnych naprawę zawęża się do wierszy z
-wadliwego źródła, tutaj zdarzeń z kanału `SHOP`.
+„naprawiony”. Dlatego naprawiamy tylko nazwy z wadliwego źródła, czyli z aktywacji z kanału `SHOP`, i
+tylko tam walidacja szuka zepsutego kodowania. Nazwa `Znak Â© w nazwie` z aplikacji albo infolinii zostaje
+bez zmian (test `cleanNameFromOtherChannelsIsNotRewritten`).
 
 W terminalu zepsute `ą` wygląda zwykle jak `Ä…`, a nie `Ä` i niewidoczny znak. To Windows-1252, w
 którym bajt `85` to `…`. Naprawa zakłada ISO-8859-1, bo tego użył import. W Windows-1252 pięć bajtów
@@ -275,8 +277,15 @@ pierwszego backfillu.
 | Drugi przebieg tego samego backfillu | nie, nic się nie zmieniło |
 
 Wysyłka idzie po podmianie partycji, więc jej błąd nie może cofnąć backfillu. Każde powiadomienie
-wysyłamy osobno: gdy bramka SMS rzuci wyjątek przy jednym abonencie, pozostali i tak dostają swoje,
-a nieudane trafiają do `Report.undelivered`, skąd można je wysłać ponownie.
+wysyłamy osobno: gdy bramka SMS rzuci wyjątek przy jednym abonencie, wysyłka do pozostałych i tak jest
+próbowana, a te z błędem trafiają do `Report.undelivered`. To lista wysyłek, przy których bramka
+zgłosiła błąd, a nie potwierdzenie, że SMS nie dotarł: wyjątek, na przykład przekroczenie czasu, może
+przyjść już po wysłaniu wiadomości. Ponowna wysyłka z tej listy może więc wysłać ten sam SMS dwa razy.
+
+Ponowną wysyłkę robi się osobno, nie kolejnym backfillem: ten niczego już nie zmieni, więc nikogo nie
+powiadomi. Przed wysyłką trzeba sprawdzić, czy każda poprawka z powiadomienia nadal zgadza się z
+partycją, której dotyczy (`Table.read(miesiąc)` ma status `after`). Poprawki z partycji cofniętych
+przez `rollback` pomijamy, a powiadomienie bez żadnej aktualnej poprawki nie wychodzi wcale.
 
 Jeden abonent dostaje **jedno** powiadomienie na przebieg, ze wszystkimi poprawkami. Abonent
 `48600100400` ma poprawki w marcu i w kwietniu i dostaje jeden SMS, a nie dwa:

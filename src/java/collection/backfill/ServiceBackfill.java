@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import collection.backfill.model.Channel;
 import collection.backfill.model.EventType;
 import collection.backfill.model.LegacyServiceRow;
 import collection.backfill.model.ProvisioningEvent;
@@ -52,7 +53,7 @@ import collection.backfill.text.TextRepair;
 /// nie zapisywano, a kolumna `legacyStatusCode` służyła wyłączonemu już systemowi rozliczeń.
 ///
 /// **Nowa logika ([#currentSnapshot]).** Kolejność wystąpienia (`occurredAt`, przy remisie
-/// `sequence`), naprawione kodowanie nazwy, nowa kolumna `activationChannel` z nieużywanego dotąd
+/// `sequence`), naprawione kodowanie nazwy z aktywacji w sklepie (`SHOP`), nowa kolumna `activationChannel` z nieużywanego dotąd
 /// pola zdarzenia, `planName` przemianowane na `offerName`, `legacyStatusCode` usunięte.
 ///
 /// **Backfill, krok po kroku.**
@@ -209,13 +210,17 @@ public class ServiceBackfill {
         if (changes.touchData()) {
             return Action.CORRECTION;
         }
-        return isUpToDate(before, after) ? Action.UP_TO_DATE : Action.SCHEMA_ONLY;
+        if (isUpToDate(before, after)) {
+            return Action.UP_TO_DATE;
+        }
+        // sam schemat zmienia się tylko w starej partycji; brakująca powstaje, a nowa różni się danymi (np. kanałem)
+        return before.orElse(null) instanceof LegacyPartition ? Action.SCHEMA_ONLY : Action.CORRECTION;
     }
 
     private static boolean isUpToDate(Optional<Partition> before, CurrentPartition after) {
         return before.map(partition -> partition instanceof CurrentPartition current
                         && index(current.rows()).equals(index(after.rows())))
-                .orElse(after.rows().isEmpty());
+                .orElse(false);
     }
 
     private boolean isFrozen(YearMonth month) {
@@ -283,8 +288,12 @@ public class ServiceBackfill {
     private static ServiceRow currentRow(Map.Entry<ServiceKey, ServiceState> entry) {
         ServiceKey key = entry.getKey();
         ServiceState state = entry.getValue();
-        return new ServiceRow(key.msisdn(), key.serviceCode(), TextRepair.repair(state.offerName()), state.status(),
-                state.channel());
+        return new ServiceRow(key.msisdn(), key.serviceCode(), offerName(state), state.status(), state.channel());
+    }
+
+    // kodowanie psują tylko kasy w sklepach; nazwy z innych kanałów zostają, nawet gdy wyglądają podejrzanie
+    private static String offerName(ServiceState state) {
+        return state.channel() == Channel.SHOP ? TextRepair.repair(state.offerName()) : state.offerName();
     }
 
     private static LegacyServiceRow legacyRow(Map.Entry<ServiceKey, ServiceState> entry) {
@@ -329,7 +338,7 @@ public class ServiceBackfill {
 
     private static Stream<String> lostRowProblems(Changes changes) {
         return changes.lostRows().stream()
-                .map(key -> "wiersz zniknąłby z partycji, bo w dzienniku nie ma jego zdarzeń: " + key);
+                .map(key -> "wiersz zniknąłby z partycji, bo przeliczenie dziennika go nie odtworzyło: " + key);
     }
 
     private Stream<String> tooManyStatusChanges(Changes changes, int rowsBefore) {
@@ -343,7 +352,7 @@ public class ServiceBackfill {
 
     private static Stream<String> unrepairedNames(CurrentPartition after) {
         return after.rows().stream()
-                .filter(row -> TextRepair.isMangled(row.offerName()))
+                .filter(row -> row.activationChannel() == Channel.SHOP && TextRepair.isMangled(row.offerName()))
                 .map(row -> "nazwa oferty nadal z zepsutym kodowaniem: " + row.key());
     }
 
